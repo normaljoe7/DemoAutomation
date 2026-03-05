@@ -1,0 +1,16 @@
+fastapi
+uvicorn
+python-docx
+docx2pdf
+pandas
+docxtpl
+python-pptx
+comtypes
+sqlalchemy
+redis
+celery
+python-multipart
+passlib[bcrypt]
+pyjwt
+pydantic-settings
+pydantic[email]
