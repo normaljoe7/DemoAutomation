@@ -7,6 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+    DialogDescription,
+} from "@/components/ui/dialog";
+import {
     ShieldCheck,
     FileText,
     Edit,
@@ -23,8 +31,13 @@ import {
     Gavel,
     Calendar,
     User,
+    FileUp,
+    Plus,
+    Loader2,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef } from "react";
+
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 // ─── Legal Template Definitions ───
 interface LegalTemplate {
@@ -134,6 +147,57 @@ export default function LegalPage() {
     const [editValue, setEditValue] = useState("");
     const [saved, setSaved] = useState(false);
 
+    // Template upload
+    const [uploadOpen, setUploadOpen] = useState(false);
+    const [uploadFile, setUploadFile] = useState<File | null>(null);
+    const [uploading, setUploading] = useState(false);
+    const [uploadSuccess, setUploadSuccess] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleUploadTemplate = async () => {
+        if (!uploadFile) return;
+        setUploading(true);
+        try {
+            const fd = new FormData();
+            fd.append("file", uploadFile);
+            fd.append("department", "legal");
+            const res = await fetch(`${API}/api/v1/templates/upload`, {
+                method: "POST",
+                body: fd,
+            });
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({ detail: "Upload failed" }));
+                throw new Error(errData.detail || "Upload failed");
+            }
+            setUploadSuccess(true);
+            setTimeout(() => {
+                setUploadOpen(false);
+                setUploadFile(null);
+                setUploadSuccess(false);
+            }, 1500);
+        } catch (e: unknown) {
+            const msg = e instanceof Error ? e.message : "Upload failed";
+            alert(`Upload failed: ${msg}`);
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const handleApprove = async (templateId: string) => {
+        const t = templates.find((t) => t.id === templateId);
+        const updated = templates.map((t) => t.id === templateId ? { ...t, status: "approved" as const } : t);
+        setTemplates(updated);
+        setSelected(updated.find((t) => t.id === templateId) || null);
+        // Create approval notification
+        try {
+            await fetch(`${API}/api/v1/documents/${templateId}/approve`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ lead_name: t?.assignedLead, doc_type: t?.type }),
+            });
+        } catch { /* silent */ }
+    };
+
     const handleEdit = (key: string, currentValue: string) => {
         setEditingKey(key);
         setEditValue(currentValue);
@@ -154,12 +218,6 @@ export default function LegalPage() {
         setTimeout(() => setSaved(false), 1500);
     };
 
-    const handleApprove = (templateId: string) => {
-        const updated = templates.map((t) => t.id === templateId ? { ...t, status: "approved" as const } : t);
-        setTemplates(updated);
-        setSelected(updated.find((t) => t.id === templateId) || null);
-    };
-
     const typeLabels: Record<string, string> = {
         contract: "Contract",
         nda: "NDA",
@@ -168,6 +226,7 @@ export default function LegalPage() {
     };
 
     return (
+        <>
         <div className="flex flex-col h-full w-full">
             <Header title="Legal Department" subtitle="Manage contracts, NDAs, SLAs — review and approve legal templates." badgeText="Level 1" />
 
@@ -179,9 +238,18 @@ export default function LegalPage() {
                             <ShieldCheck className="w-4 h-4 text-violet-400" />
                             <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Legal Templates</p>
                         </div>
-                        <Badge className="bg-violet-500/10 text-violet-400 border-violet-500/20 text-[10px] shadow-none border">
-                            {templates.length} Templates
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                            <Badge className="bg-violet-500/10 text-violet-400 border-violet-500/20 text-[10px] shadow-none border">
+                                {templates.length} Templates
+                            </Badge>
+                            <Button
+                                size="sm"
+                                className="h-7 text-xs bg-violet-500/10 text-violet-400 border border-violet-500/20 hover:bg-violet-500/20 gap-1"
+                                onClick={() => { setUploadFile(null); setUploadSuccess(false); setUploadOpen(true); }}
+                            >
+                                <Plus className="w-3 h-3" />Upload
+                            </Button>
+                        </div>
                     </div>
                     <div className="flex-1 overflow-y-auto divide-y divide-zinc-800/60">
                         {templates.map((t) => (
@@ -325,5 +393,59 @@ export default function LegalPage() {
                 )}
             </div>
         </div>
+
+            {/* Upload Template Dialog */}
+            <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
+                <DialogContent className="bg-[#111] border-zinc-800 text-white max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="text-white">Upload Legal Template</DialogTitle>
+                        <DialogDescription className="text-zinc-400">
+                            Upload a DOCX or PPTX template for the Legal department. It will be visible to SDRs in the Templates section.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div
+                        className="p-8 border-2 border-dashed border-violet-500/30 rounded-xl text-center cursor-pointer hover:border-violet-500/50 transition-colors"
+                        onClick={() => fileInputRef.current?.click()}
+                    >
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept=".docx,.pptx"
+                            className="hidden"
+                            onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
+                        />
+                        {uploadFile ? (
+                            <>
+                                <FileUp className="w-10 h-10 text-violet-400 mx-auto mb-2" />
+                                <p className="text-sm text-white font-medium">{uploadFile.name}</p>
+                                <p className="text-xs text-zinc-500 mt-1">{(uploadFile.size / 1024).toFixed(1)} KB — click to change</p>
+                            </>
+                        ) : (
+                            <>
+                                <FileUp className="w-12 h-12 text-violet-600/50 mx-auto mb-3" />
+                                <p className="text-sm text-zinc-400">Click to select a .docx or .pptx template</p>
+                                <p className="text-xs text-zinc-600 mt-1">Tagged as Legal department automatically</p>
+                            </>
+                        )}
+                    </div>
+                    {uploadSuccess && (
+                        <p className="text-emerald-400 text-sm flex items-center gap-2">
+                            <CheckCircle2 className="w-4 h-4" />Template uploaded! SDRs can now access it in the Templates section.
+                        </p>
+                    )}
+                    <DialogFooter>
+                        <Button variant="outline" className="border-zinc-700 text-zinc-300" onClick={() => setUploadOpen(false)}>Cancel</Button>
+                        <Button
+                            className="bg-violet-600 hover:bg-violet-700 text-white"
+                            disabled={!uploadFile || uploading}
+                            onClick={handleUploadTemplate}
+                        >
+                            {uploading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <FileUp className="w-4 h-4 mr-2" />}
+                            Upload Template
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </>
     );
 }

@@ -30,8 +30,13 @@ import {
     Calculator,
     ChevronRight,
     Lock,
+    FileUp,
+    Plus,
+    Loader2,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef } from "react";
+
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 // ─── Template definitions owned by Finance ───
 interface FinanceTemplate {
@@ -142,6 +147,42 @@ export default function FinancePage() {
     const [editValue, setEditValue] = useState("");
     const [saved, setSaved] = useState(false);
 
+    // Template upload
+    const [uploadOpen, setUploadOpen] = useState(false);
+    const [uploadFile, setUploadFile] = useState<File | null>(null);
+    const [uploading, setUploading] = useState(false);
+    const [uploadSuccess, setUploadSuccess] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleUploadTemplate = async () => {
+        if (!uploadFile) return;
+        setUploading(true);
+        try {
+            const fd = new FormData();
+            fd.append("file", uploadFile);
+            fd.append("department", "finance");
+            const res = await fetch(`${API}/api/v1/templates/upload`, {
+                method: "POST",
+                body: fd,
+            });
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({ detail: "Upload failed" }));
+                throw new Error(errData.detail || "Upload failed");
+            }
+            setUploadSuccess(true);
+            setTimeout(() => {
+                setUploadOpen(false);
+                setUploadFile(null);
+                setUploadSuccess(false);
+            }, 1500);
+        } catch (e: unknown) {
+            const msg = e instanceof Error ? e.message : "Upload failed";
+            alert(`Upload failed: ${msg}`);
+        } finally {
+            setUploading(false);
+        }
+    };
+
     const handleEdit = (key: string, currentValue: string) => {
         setEditingKey(key);
         setEditValue(currentValue);
@@ -162,13 +203,23 @@ export default function FinancePage() {
         setTimeout(() => setSaved(false), 1500);
     };
 
-    const handleApprove = (templateId: string) => {
+    const handleApprove = async (templateId: string) => {
+        const t = templates.find((t) => t.id === templateId);
         const updated = templates.map((t) => t.id === templateId ? { ...t, status: "approved" as const } : t);
         setTemplates(updated);
         setSelected(updated.find((t) => t.id === templateId) || null);
+        // Create approval notification
+        try {
+            await fetch(`${API}/api/v1/documents/${templateId}/approve`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ lead_name: t?.assignedLead, doc_type: t?.type }),
+            });
+        } catch { /* silent */ }
     };
 
     return (
+        <>
         <div className="flex flex-col h-full w-full">
             <Header title="Finance Department" subtitle="Manage financial templates — invoices, quotations, pricing, and tax configurations." badgeText="Level 1" />
 
@@ -180,9 +231,18 @@ export default function FinancePage() {
                             <Wallet className="w-4 h-4 text-amber-400" />
                             <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Finance Templates</p>
                         </div>
-                        <Badge className="bg-amber-500/10 text-amber-400 border-amber-500/20 text-[10px] shadow-none border">
-                            {templates.length} Templates
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                            <Badge className="bg-amber-500/10 text-amber-400 border-amber-500/20 text-[10px] shadow-none border">
+                                {templates.length} Templates
+                            </Badge>
+                            <Button
+                                size="sm"
+                                className="h-7 text-xs bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 gap-1"
+                                onClick={() => { setUploadFile(null); setUploadSuccess(false); setUploadOpen(true); }}
+                            >
+                                <Plus className="w-3 h-3" />Upload
+                            </Button>
+                        </div>
                     </div>
                     <div className="flex-1 overflow-y-auto divide-y divide-zinc-800/60">
                         {templates.map((t) => (
@@ -314,5 +374,59 @@ export default function FinancePage() {
                 )}
             </div>
         </div>
+
+            {/* Upload Template Dialog */}
+            <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
+                <DialogContent className="bg-[#111] border-zinc-800 text-white max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="text-white">Upload Finance Template</DialogTitle>
+                        <DialogDescription className="text-zinc-400">
+                            Upload a DOCX or PPTX template for the Finance department. It will be visible to SDRs in the Templates section.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div
+                        className="p-8 border-2 border-dashed border-amber-500/30 rounded-xl text-center cursor-pointer hover:border-amber-500/50 transition-colors"
+                        onClick={() => fileInputRef.current?.click()}
+                    >
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept=".docx,.pptx"
+                            className="hidden"
+                            onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
+                        />
+                        {uploadFile ? (
+                            <>
+                                <FileUp className="w-10 h-10 text-amber-400 mx-auto mb-2" />
+                                <p className="text-sm text-white font-medium">{uploadFile.name}</p>
+                                <p className="text-xs text-zinc-500 mt-1">{(uploadFile.size / 1024).toFixed(1)} KB — click to change</p>
+                            </>
+                        ) : (
+                            <>
+                                <FileUp className="w-12 h-12 text-amber-600/50 mx-auto mb-3" />
+                                <p className="text-sm text-zinc-400">Click to select a .docx or .pptx template</p>
+                                <p className="text-xs text-zinc-600 mt-1">Tagged as Finance department automatically</p>
+                            </>
+                        )}
+                    </div>
+                    {uploadSuccess && (
+                        <p className="text-emerald-400 text-sm flex items-center gap-2">
+                            <CheckCircle2 className="w-4 h-4" />Template uploaded! SDRs can now access it in the Templates section.
+                        </p>
+                    )}
+                    <DialogFooter>
+                        <Button variant="outline" className="border-zinc-700 text-zinc-300" onClick={() => setUploadOpen(false)}>Cancel</Button>
+                        <Button
+                            className="bg-amber-600 hover:bg-amber-700 text-white"
+                            disabled={!uploadFile || uploading}
+                            onClick={handleUploadTemplate}
+                        >
+                            {uploading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <FileUp className="w-4 h-4 mr-2" />}
+                            Upload Template
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </>
     );
 }

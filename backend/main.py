@@ -314,11 +314,28 @@ def list_templates():
     return ls()
 
 @app.post("/api/v1/templates/upload")
-async def upload_template(file: UploadFile = File(...)):
+async def upload_template(
+    file: UploadFile = File(...),
+    department: str = Form("sdr"),
+):
     from document_service import upload_template as ut
-    content = await file.read()
-    result = ut(content, file.filename)
-    return result
+    # Validate file extension
+    if file.filename is None or not (
+        file.filename.lower().endswith(".docx") or file.filename.lower().endswith(".pptx")
+    ):
+        raise HTTPException(status_code=400, detail="Only .docx and .pptx files are supported.")
+    try:
+        content = await file.read()
+        if len(content) == 0:
+            raise HTTPException(status_code=400, detail="Uploaded file is empty.")
+        result = ut(content, file.filename, department=department)
+        return result
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
 
 @app.delete("/api/v1/templates/{name}")
 def remove_template(name: str):
@@ -394,13 +411,85 @@ def download_document(filename: str):
     return FileResponse(fpath, filename=filename)
 
 # ──────────────────── APPROVALS ────────────────────
+class ApproveRejectRequest(BaseModel):
+    lead_name: Optional[str] = None
+    doc_type: Optional[str] = None
+    rejection_reason: Optional[str] = None
+
 @app.post("/api/v1/documents/{id}/approve")
-def approve_document(id: int, db: Session = Depends(get_db)):
+def approve_document(id: int, db: Session = Depends(get_db), req: Optional[ApproveRejectRequest] = None):
+    if req is None:
+        req = ApproveRejectRequest()
+    # Update document status
+    doc = db.query(models.Document).filter(models.Document.id == id).first()
+    if doc:
+        doc.status = "approved"
+    # Create notification for SDRs
+    notif = models.Notification(
+        message=f"Document '{req.doc_type or 'document'}' for {req.lead_name or 'lead'} has been approved.",
+        type="approved",
+        document_id=id,
+        lead_name=req.lead_name,
+        doc_type=req.doc_type,
+    )
+    db.add(notif)
+    db.commit()
     return {"status": "approved", "document_id": id}
 
 @app.post("/api/v1/documents/{id}/reject")
-def reject_document(id: int, db: Session = Depends(get_db)):
+def reject_document(id: int, db: Session = Depends(get_db), req: Optional[ApproveRejectRequest] = None):
+    if req is None:
+        req = ApproveRejectRequest()
+    # Update document status
+    doc = db.query(models.Document).filter(models.Document.id == id).first()
+    if doc:
+        doc.status = "rejected"
+    # Create notification for SDRs
+    reason_suffix = f" Reason: {req.rejection_reason}" if req.rejection_reason else ""
+    notif = models.Notification(
+        message=f"Document '{req.doc_type or 'document'}' for {req.lead_name or 'lead'} has been rejected.{reason_suffix}",
+        type="rejected",
+        document_id=id,
+        lead_name=req.lead_name,
+        doc_type=req.doc_type,
+    )
+    db.add(notif)
+    db.commit()
     return {"status": "rejected", "document_id": id}
+
+# ──────────────────── NOTIFICATIONS ────────────────────
+@app.get("/api/v1/notifications")
+def list_notifications(db: Session = Depends(get_db)):
+    notifs = db.query(models.Notification).order_by(models.Notification.created_at.desc()).limit(50).all()
+    return [
+        {
+            "id": n.id,
+            "message": n.message,
+            "type": n.type,
+            "document_id": n.document_id,
+            "lead_name": n.lead_name,
+            "doc_type": n.doc_type,
+            "is_read": n.is_read,
+            "created_at": n.created_at.isoformat() if n.created_at else None,
+        }
+        for n in notifs
+    ]
+
+@app.post("/api/v1/notifications/mark-read")
+def mark_notifications_read(ids: List[int] = Body(...), db: Session = Depends(get_db)):
+    db.query(models.Notification).filter(models.Notification.id.in_(ids)).update(
+        {"is_read": True}, synchronize_session=False
+    )
+    db.commit()
+    return {"status": "marked_read", "count": len(ids)}
+
+@app.post("/api/v1/notifications/mark-all-read")
+def mark_all_notifications_read(db: Session = Depends(get_db)):
+    db.query(models.Notification).filter(models.Notification.is_read == False).update(  # noqa: E712
+        {"is_read": True}, synchronize_session=False
+    )
+    db.commit()
+    return {"status": "all_marked_read"}
 
 class EmailSendRequest(BaseModel):
     to: str

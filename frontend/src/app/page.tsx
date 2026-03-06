@@ -1,5 +1,7 @@
 "use client";
 
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/layout/header";
@@ -64,6 +66,10 @@ import {
   Edit2,
   Globe,
   Database,
+  Search,
+  SlidersHorizontal,
+  X,
+  ArrowUpDown,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 
@@ -549,6 +555,13 @@ export default function LeadsDashboard() {
 
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(false);
 
+  // ─── Search and Filter state ───
+  const [searchQuery, setSearchQuery] = useState("");
+  const [fulfillmentFilter, setFulfillmentFilter] = useState<"all" | "complete" | "partial" | "none" | "new">("all");
+  const [leadStatusFilter, setLeadStatusFilter] = useState<"all" | "HOT" | "WARM" | "COLD" | "NOT CLASSIFIED">("all");
+  const [sortBy, setSortBy] = useState<"default" | "name" | "company" | "lastContact" | "followUp">("default");
+  const [filterPanelOpen, setFilterPanelOpen] = useState(false);
+
   // ─── Pre-Call Intelligence Dialog ───
   const [preCallOpen, setPreCallOpen] = useState(false);
   const [preCallLead, setPreCallLead] = useState<Lead | null>(null);
@@ -590,7 +603,7 @@ export default function LeadsDashboard() {
   useEffect(() => {
     const fetchLeads = async () => {
       try {
-        const res = await fetch("http://localhost:8000/api/v1/leads");
+        const res = await fetch(`${API}/api/v1/leads`);
         if (!res.ok) return;
         const data = await res.json();
         if (!Array.isArray(data)) return;
@@ -640,7 +653,7 @@ export default function LeadsDashboard() {
     // Load settings (custom fields + services) once on mount
     const fetchSettings = async () => {
       try {
-        const sRes = await fetch("http://localhost:8000/api/v1/settings");
+        const sRes = await fetch(`${API}/api/v1/settings`);
         if (sRes.ok) {
           const sData = await sRes.json();
           if (sData.services && Array.isArray(sData.services)) setSettingsServices(sData.services);
@@ -660,7 +673,7 @@ export default function LeadsDashboard() {
     if (!selectedLead) return;
     const fetchLeadDocs = async () => {
       try {
-        const res = await fetch(`http://localhost:8000/api/v1/leads/${selectedLead.id}/documents`);
+        const res = await fetch(`${API}/api/v1/leads/${selectedLead.id}/documents`);
         if (res.ok) {
           const docs = await res.json();
           setLeadDbDocs(prev => ({ ...prev, [selectedLead.id]: docs }));
@@ -668,7 +681,7 @@ export default function LeadsDashboard() {
           const urlMap: Record<string, string> = {};
           docs.forEach((d: DbDoc) => {
             const key = `${selectedLead.id}_${d.type}`;
-            urlMap[key] = `http://localhost:8000${d.download_url}`;
+            urlMap[key] = `${API}${d.download_url}`;
           });
           setDocDownloadUrls(prev => ({ ...prev, ...urlMap }));
         }
@@ -727,7 +740,7 @@ export default function LeadsDashboard() {
 
     setIsAddingLead(true);
     try {
-      const response = await fetch("http://localhost:8000/api/v1/leads", {
+      const response = await fetch(`${API}/api/v1/leads`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -816,7 +829,7 @@ export default function LeadsDashboard() {
     const lead = leads.find((l) => l.id === leadId);
     if (!lead) return;
     try {
-      await fetch(`http://localhost:8000/api/v1/leads/${leadId}`, {
+      await fetch(`${API}/api/v1/leads/${leadId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: lead.email, ...fields }),
@@ -931,7 +944,7 @@ export default function LeadsDashboard() {
       .filter(e => e.length > 0);
 
     try {
-      await fetch(`http://localhost:8000/api/v1/leads/${rescheduleLeadId}/reschedule`, {
+      await fetch(`${API}/api/v1/leads/${rescheduleLeadId}/reschedule`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1027,7 +1040,7 @@ export default function LeadsDashboard() {
     setSampleListOpen(false);
     // Persist generated_docs
     try {
-      await fetch(`http://localhost:8000/api/v1/leads/${selectedLead.id}`, {
+      await fetch(`${API}/api/v1/leads/${selectedLead.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: selectedLead.email, generated_docs: newGeneratedDocs }),
@@ -1054,7 +1067,7 @@ export default function LeadsDashboard() {
     // Try calling the template engine if a template is selected
     if (genTemplateName) {
       try {
-        const res = await fetch("http://localhost:8000/api/v1/documents/generate", {
+        const res = await fetch(`${API}/api/v1/documents/generate`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -1067,7 +1080,7 @@ export default function LeadsDashboard() {
         });
         if (res.ok) {
           const { filename } = await res.json();
-          const url = `http://localhost:8000/api/v1/documents/${filename}/download`;
+          const url = `${API}/api/v1/documents/${filename}/download`;
           setGenDownloadUrl(url);
           // Record download URL for this lead+doc
           const newUrlMap = { [`${selectedLead.id}_${genDocType}`]: url };
@@ -1077,7 +1090,7 @@ export default function LeadsDashboard() {
             .filter(([k]) => k.startsWith(`${selectedLead.id}_`));
           const updatedUrls: Record<string, string> = {};
           leadUrlEntries.forEach(([k, v]) => { updatedUrls[k.replace(`${selectedLead.id}_`, "")] = v; });
-          fetch(`http://localhost:8000/api/v1/leads/${selectedLead.id}`, {
+          fetch(`${API}/api/v1/leads/${selectedLead.id}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email: selectedLead.email, generated_doc_urls: updatedUrls }),
@@ -1100,7 +1113,7 @@ export default function LeadsDashboard() {
 
     // Persist generated_docs to backend
     try {
-      await fetch(`http://localhost:8000/api/v1/leads/${selectedLead.id}`, {
+      await fetch(`${API}/api/v1/leads/${selectedLead.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1152,7 +1165,7 @@ export default function LeadsDashboard() {
 
     // Fetch templates from backend to populate selection
     try {
-      const res = await fetch("http://localhost:8000/api/v1/templates");
+      const res = await fetch(`${API}/api/v1/templates`);
       if (res.ok) {
         const data = await res.json();
         setTemplatesList(Array.isArray(data) ? data : []);
@@ -1193,7 +1206,7 @@ export default function LeadsDashboard() {
 
     // Load services from settings (always refresh so latest saved services appear)
     try {
-      const sRes = await fetch("http://localhost:8000/api/v1/settings");
+      const sRes = await fetch(`${API}/api/v1/settings`);
       if (sRes.ok) {
         const sData = await sRes.json();
         // Only overwrite if we actually got services — keep existing state otherwise
@@ -1265,7 +1278,7 @@ export default function LeadsDashboard() {
 
     // Persist to database
     try {
-      await fetch(`http://localhost:8000/api/v1/leads/${selectedLead.id}`, {
+      await fetch(`${API}/api/v1/leads/${selectedLead.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1317,6 +1330,37 @@ export default function LeadsDashboard() {
     contact_person: "Contact Person",
   };
 
+  // ─── Computed: filtered + sorted leads ───
+  const filteredLeads = leads
+    .filter((lead) => {
+      // Search by name or company
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        if (!lead.name.toLowerCase().includes(q) && !lead.company.toLowerCase().includes(q)) return false;
+      }
+      // Fulfillment filter
+      if (fulfillmentFilter !== "all") {
+        const emailSent = lead.demoSubStatus === "Closure";
+        const hasPartial = lead.transcript !== null || lead.summary !== null || lead.generatedDocs.length > 0;
+        const hasNone = !hasPartial && !emailSent;
+        const isNew = !lead.transcript && !lead.summary && !lead.actionItems && lead.generatedDocs.length === 0 && lead.demoStatus === "Demo Scheduled";
+        if (fulfillmentFilter === "complete" && !emailSent) return false;
+        if (fulfillmentFilter === "partial" && (!hasPartial || emailSent)) return false;
+        if (fulfillmentFilter === "none" && !hasNone) return false;
+        if (fulfillmentFilter === "new" && !isNew) return false;
+      }
+      // Lead status filter
+      if (leadStatusFilter !== "all" && lead.leadStatus !== leadStatusFilter) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      if (sortBy === "name") return a.name.localeCompare(b.name);
+      if (sortBy === "company") return a.company.localeCompare(b.company);
+      if (sortBy === "lastContact") return (b.lastContact || "").localeCompare(a.lastContact || "");
+      if (sortBy === "followUp") return (a.followUpDate || "9999").localeCompare(b.followUpDate || "9999");
+      return 0; // default: server order (newest first)
+    });
+
   return (
     <div className="flex flex-col h-full w-full">
       <Header title="Active Conversations" subtitle="Manage pipeline, automate documents, and close deals." badgeText={`${leads.length} Active`} />
@@ -1325,15 +1369,109 @@ export default function LeadsDashboard() {
         {/* ─── Leads Table ─── */}
         <div className={`transition-all duration-300 ease-in-out border border-zinc-800/60 rounded-xl bg-[#0c0c0c] overflow-hidden shadow-2xl flex flex-col h-full ${isRightPanelOpen ? "w-[58%]" : "w-full"}`}>
         {/* Leads Table Toolbar */}
-          <div className="flex items-center justify-between px-4 py-2.5 border-b border-zinc-900 bg-[#080808]">
-            <p className="text-xs text-zinc-500 font-medium">{leads.length} lead{leads.length !== 1 ? "s" : ""}</p>
-            <Button
-              size="sm"
-              className="bg-indigo-600 hover:bg-indigo-700 text-white h-7 text-xs gap-1.5"
-              onClick={() => { setNewLeadForm(defaultNewLeadForm); setAddLeadErrors({}); setAddLeadOpen(true); }}
-            >
-              <UserPlus className="w-3.5 h-3.5" />Add Lead
-            </Button>
+          <div className="border-b border-zinc-900 bg-[#080808]">
+            <div className="flex items-center justify-between px-4 py-2.5">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                {/* Search input */}
+                <div className="relative flex-1 max-w-xs">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 pointer-events-none" />
+                  <input
+                    type="text"
+                    placeholder="Search leads..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full h-7 pl-8 pr-7 text-xs bg-zinc-900 border border-zinc-800 rounded-md text-white placeholder-zinc-600 focus:outline-none focus:border-indigo-500/60 focus:ring-1 focus:ring-indigo-500/20"
+                  />
+                  {searchQuery && (
+                    <button onClick={() => setSearchQuery("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white">
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+                {/* Filter toggle */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={`h-7 text-xs border-zinc-800 gap-1.5 ${filterPanelOpen ? "bg-indigo-500/10 text-indigo-400 border-indigo-500/30" : "bg-transparent text-zinc-400 hover:text-white hover:bg-zinc-800"}`}
+                  onClick={() => setFilterPanelOpen((v) => !v)}
+                >
+                  <SlidersHorizontal className="w-3 h-3" />Filters
+                  {(fulfillmentFilter !== "all" || leadStatusFilter !== "all" || sortBy !== "default") && (
+                    <span className="ml-0.5 w-4 h-4 rounded-full bg-indigo-500 text-white text-[9px] flex items-center justify-center font-bold">
+                      {[fulfillmentFilter !== "all", leadStatusFilter !== "all", sortBy !== "default"].filter(Boolean).length}
+                    </span>
+                  )}
+                </Button>
+                <p className="text-xs text-zinc-600 ml-1 shrink-0">{filteredLeads.length}/{leads.length}</p>
+              </div>
+              <Button
+                size="sm"
+                className="bg-indigo-600 hover:bg-indigo-700 text-white h-7 text-xs gap-1.5 ml-2 shrink-0"
+                onClick={() => { setNewLeadForm(defaultNewLeadForm); setAddLeadErrors({}); setAddLeadOpen(true); }}
+              >
+                <UserPlus className="w-3.5 h-3.5" />Add Lead
+              </Button>
+            </div>
+            {/* Filter Panel */}
+            {filterPanelOpen && (
+              <div className="px-4 pb-3 pt-0 border-t border-zinc-900/60 bg-[#060606] flex flex-wrap gap-x-6 gap-y-2">
+                {/* Fulfillment filter */}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold w-20 shrink-0">Fulfillment</span>
+                  <div className="flex gap-1">
+                    {(["all", "complete", "partial", "none", "new"] as const).map((f) => (
+                      <button
+                        key={f}
+                        onClick={() => setFulfillmentFilter(f)}
+                        className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider border transition-all ${fulfillmentFilter === f ? "bg-indigo-500/20 text-indigo-400 border-indigo-500/40" : "bg-transparent text-zinc-500 border-zinc-800 hover:text-white hover:border-zinc-700"}`}
+                      >
+                        {f === "all" ? "All" : f === "complete" ? "Completed" : f === "partial" ? "Partial" : f === "none" ? "None" : "New"}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {/* Lead status filter */}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold w-20 shrink-0">Status</span>
+                  <div className="flex gap-1">
+                    {(["all", "HOT", "WARM", "COLD", "NOT CLASSIFIED"] as const).map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => setLeadStatusFilter(s)}
+                        className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider border transition-all ${leadStatusFilter === s ? "bg-indigo-500/20 text-indigo-400 border-indigo-500/40" : "bg-transparent text-zinc-500 border-zinc-800 hover:text-white hover:border-zinc-700"}`}
+                      >
+                        {s === "NOT CLASSIFIED" ? "NC" : s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {/* Sort */}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold w-20 shrink-0">Sort by</span>
+                  <div className="flex gap-1">
+                    {(["default", "name", "company", "lastContact", "followUp"] as const).map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => setSortBy(s)}
+                        className={`flex items-center gap-0.5 px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider border transition-all ${sortBy === s ? "bg-indigo-500/20 text-indigo-400 border-indigo-500/40" : "bg-transparent text-zinc-500 border-zinc-800 hover:text-white hover:border-zinc-700"}`}
+                      >
+                        {s === "default" ? "Default" : s === "lastContact" ? "Last Contact" : s === "followUp" ? "Follow Up" : s === "name" ? "Name" : "Company"}
+                        {sortBy === s && s !== "default" && <ArrowUpDown className="w-2.5 h-2.5" />}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {/* Clear filters */}
+                {(fulfillmentFilter !== "all" || leadStatusFilter !== "all" || sortBy !== "default" || searchQuery) && (
+                  <button
+                    onClick={() => { setFulfillmentFilter("all"); setLeadStatusFilter("all"); setSortBy("default"); setSearchQuery(""); }}
+                    className="text-[10px] text-rose-400 hover:text-rose-300 uppercase tracking-wider font-bold flex items-center gap-1"
+                  >
+                    <X className="w-2.5 h-2.5" />Clear All
+                  </button>
+                )}
+              </div>
+            )}
           </div>
           {/* Leads Column Headers */}
           <div className="grid grid-cols-12 px-4 py-2.5 border-b border-zinc-900 bg-zinc-900/40 text-[10px] uppercase font-bold text-zinc-500 tracking-wider">
@@ -1347,7 +1485,14 @@ export default function LeadsDashboard() {
             <div className="col-span-1 flex justify-end pr-2">ACTION</div>
           </div>
           <div className="divide-y divide-zinc-800/60 overflow-y-auto flex-1">
-            {leads.map((lead) => (
+            {filteredLeads.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-16 text-zinc-600">
+                <Search className="w-8 h-8 mb-2 opacity-40" />
+                <p className="text-sm font-medium">No leads match your filters</p>
+                <button onClick={() => { setSearchQuery(""); setFulfillmentFilter("all"); setLeadStatusFilter("all"); setSortBy("default"); }} className="mt-2 text-xs text-indigo-400 hover:text-indigo-300">Clear filters</button>
+              </div>
+            )}
+            {filteredLeads.map((lead) => (
               <div
                 key={lead.id}
                 onClick={() => { setSelectedLead(lead); setIsRightPanelOpen(true); }}
@@ -1654,7 +1799,7 @@ export default function LeadsDashboard() {
                         onBlur={async (e) => {
                           const newVals = { ...selectedLead.customFieldValues, [field.fieldName]: e.target.value };
                           try {
-                            await fetch(`http://localhost:8000/api/v1/leads/${selectedLead.id}`, {
+                            await fetch(`${API}/api/v1/leads/${selectedLead.id}`, {
                               method: "PUT",
                               headers: { "Content-Type": "application/json" },
                               body: JSON.stringify({ email: selectedLead.email, custom_field_values: newVals }),
@@ -2034,7 +2179,7 @@ export default function LeadsDashboard() {
                   </h3>
                   <div className="space-y-1.5">
                     {dbDocs.map((doc) => {
-                      const dlUrl = `http://localhost:8000${doc.download_url}`;
+                      const dlUrl = `${API}${doc.download_url}`;
                       return (
                         <div key={doc.id} className="flex items-center justify-between bg-zinc-900/60 px-3 py-2 rounded-lg border border-zinc-800/40">
                           <div className="flex items-center gap-2 min-w-0">
@@ -2469,7 +2614,7 @@ export default function LeadsDashboard() {
                             </span>
                           </div>
                           {doc.download_url && (
-                            <a href={doc.download_url.startsWith("http") ? doc.download_url : `http://localhost:8000${doc.download_url}`} download target="_blank" rel="noreferrer">
+                            <a href={doc.download_url.startsWith("http") ? doc.download_url : `${API}${doc.download_url}`} download target="_blank" rel="noreferrer">
                               <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-500 hover:text-emerald-400">
                                 <Download className="h-3.5 w-3.5" />
                               </Button>
@@ -2642,7 +2787,7 @@ export default function LeadsDashboard() {
                   const updatedLead = updated.find((l) => l.id === docSelectLeadId);
                   if (updatedLead) {
                     try {
-                      await fetch(`http://localhost:8000/api/v1/leads/${docSelectLeadId}`, {
+                      await fetch(`${API}/api/v1/leads/${docSelectLeadId}`, {
                         method: "PUT",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
@@ -2754,7 +2899,7 @@ export default function LeadsDashboard() {
                 setDateEditOpen(false);
                 // Persist to backend
                 try {
-                  await fetch(`http://localhost:8000/api/v1/leads/${selectedLead.id}`, {
+                  await fetch(`${API}/api/v1/leads/${selectedLead.id}`, {
                     method: "PUT",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({

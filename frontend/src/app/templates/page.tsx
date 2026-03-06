@@ -11,6 +11,13 @@ import {
     DialogFooter,
     DialogDescription,
 } from "@/components/ui/dialog";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -26,6 +33,11 @@ import {
     RefreshCw,
     Wand2,
     CheckCircle2,
+    MoreHorizontal,
+    Building2,
+    ShieldCheck,
+    Wallet,
+    Users,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 
@@ -35,6 +47,7 @@ interface Template {
     name: string;
     type: "docx" | "pptx";
     variables: string[];
+    department?: "sdr" | "finance" | "legal";
 }
 
 export default function TemplatesPage() {
@@ -42,12 +55,14 @@ export default function TemplatesPage() {
     const [loading, setLoading] = useState(true);
     const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
     const [filter, setFilter] = useState("all");
+    const [deptFilter, setDeptFilter] = useState<"all" | "sdr" | "finance" | "legal">("all");
 
     // Upload dialog
     const [uploadOpen, setUploadOpen] = useState(false);
     const [uploadFile, setUploadFile] = useState<File | null>(null);
     const [uploading, setUploading] = useState(false);
     const [uploadSuccess, setUploadSuccess] = useState(false);
+    const [uploadDepartment, setUploadDepartment] = useState<"sdr" | "finance" | "legal">("sdr");
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Generate dialog
@@ -88,8 +103,9 @@ export default function TemplatesPage() {
     };
 
     const filteredTemplates = templates.filter((t) => {
-        if (filter === "all") return true;
-        return categoryOf(t.name) === filter;
+        if (filter !== "all" && categoryOf(t.name) !== filter) return false;
+        if (deptFilter !== "all" && (t.department || "sdr") !== deptFilter) return false;
+        return true;
     });
 
     const handleUpload = async () => {
@@ -98,20 +114,26 @@ export default function TemplatesPage() {
         try {
             const fd = new FormData();
             fd.append("file", uploadFile);
+            fd.append("department", uploadDepartment);
             const res = await fetch(`${API}/api/v1/templates/upload`, {
                 method: "POST",
                 body: fd,
             });
-            if (!res.ok) throw new Error("Upload failed");
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({ detail: "Upload failed" }));
+                throw new Error(errData.detail || "Upload failed");
+            }
             setUploadSuccess(true);
             setTimeout(() => {
                 setUploadOpen(false);
                 setUploadFile(null);
                 setUploadSuccess(false);
+                setUploadDepartment("sdr");
                 loadTemplates();
             }, 1200);
-        } catch {
-            alert("Upload failed. Make sure the backend is running and accepts .docx/.pptx files.");
+        } catch (e: unknown) {
+            const msg = e instanceof Error ? e.message : "Upload failed";
+            alert(`Upload failed: ${msg}. Make sure the backend is running and the file is a valid .docx or .pptx.`);
         } finally {
             setUploading(false);
         }
@@ -180,18 +202,45 @@ export default function TemplatesPage() {
                 {/* Template Grid */}
                 <div className="flex-1 overflow-y-auto pr-2 pb-6">
                     <div className="flex items-center justify-between mb-6">
-                        <div className="flex gap-2 flex-wrap">
-                            {["all", "invoice", "contract", "quotation", "mom", "pre_call_ppt", "sample_list", "other"].map((cat) => (
-                                <Button
-                                    key={cat}
-                                    variant={filter === cat ? "secondary" : "outline"}
-                                    size="sm"
-                                    className={`border-zinc-800 capitalize text-xs ${filter === cat ? "bg-indigo-500/20 text-indigo-400 border-indigo-500/30 font-semibold" : "text-zinc-400 hover:text-white hover:bg-zinc-800"}`}
-                                    onClick={() => setFilter(cat)}
-                                >
-                                    {cat === "all" ? "All" : cat.replace(/_/g, " ")}
-                                </Button>
-                            ))}
+                        <div className="flex flex-col gap-2">
+                            {/* Category filter */}
+                            <div className="flex gap-2 flex-wrap">
+                                {["all", "invoice", "contract", "quotation", "mom", "pre_call_ppt", "sample_list", "other"].map((cat) => (
+                                    <Button
+                                        key={cat}
+                                        variant={filter === cat ? "secondary" : "outline"}
+                                        size="sm"
+                                        className={`border-zinc-800 capitalize text-xs ${filter === cat ? "bg-indigo-500/20 text-indigo-400 border-indigo-500/30 font-semibold" : "text-zinc-400 hover:text-white hover:bg-zinc-800"}`}
+                                        onClick={() => setFilter(cat)}
+                                    >
+                                        {cat === "all" ? "All Categories" : cat.replace(/_/g, " ")}
+                                    </Button>
+                                ))}
+                            </div>
+                            {/* Department filter */}
+                            <div className="flex gap-2">
+                                <span className="text-[10px] text-zinc-600 uppercase tracking-wider font-bold self-center">Dept:</span>
+                                {([
+                                    { value: "all", label: "All" },
+                                    { value: "sdr", label: "SDR" },
+                                    { value: "finance", label: "Finance" },
+                                    { value: "legal", label: "Legal" },
+                                ] as const).map(({ value, label }) => (
+                                    <Button
+                                        key={value}
+                                        variant="outline"
+                                        size="sm"
+                                        className={`border-zinc-800 text-xs h-6 px-2 ${deptFilter === value
+                                            ? value === "finance" ? "bg-amber-500/15 text-amber-400 border-amber-500/30 font-semibold"
+                                            : value === "legal" ? "bg-violet-500/15 text-violet-400 border-violet-500/30 font-semibold"
+                                            : "bg-indigo-500/20 text-indigo-400 border-indigo-500/30 font-semibold"
+                                            : "text-zinc-500 hover:text-white hover:bg-zinc-800"}`}
+                                        onClick={() => setDeptFilter(value)}
+                                    >
+                                        {label}
+                                    </Button>
+                                ))}
+                            </div>
                         </div>
                         <div className="flex gap-2">
                             <Button variant="outline" className="border-zinc-700 text-zinc-400 hover:text-white" onClick={loadTemplates} disabled={loading}>
@@ -230,10 +279,45 @@ export default function TemplatesPage() {
                                             </div>
                                             <div>
                                                 <p className="text-sm font-semibold text-white">{tmpl.name}</p>
-                                                <p className="text-xs text-zinc-500 capitalize">{categoryOf(tmpl.name).replace(/_/g, " ")}</p>
+                                                <div className="flex items-center gap-1.5 mt-0.5">
+                                                    <p className="text-xs text-zinc-500 capitalize">{categoryOf(tmpl.name).replace(/_/g, " ")}</p>
+                                                    {tmpl.department && tmpl.department !== "sdr" && (
+                                                        <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border ${tmpl.department === "finance" ? "bg-amber-500/10 text-amber-400 border-amber-500/20" : "bg-violet-500/10 text-violet-400 border-violet-500/20"}`}>
+                                                            {tmpl.department === "finance" ? "Finance" : "Legal"}
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
-                                        <Badge className="bg-zinc-800 text-zinc-400 border-zinc-700 text-[9px] uppercase shadow-none border">{tmpl.type}</Badge>
+                                        <div className="flex items-center gap-1.5">
+                                            <Badge className="bg-zinc-800 text-zinc-400 border-zinc-700 text-[9px] uppercase shadow-none border">{tmpl.type}</Badge>
+                                            {/* Three-dot menu */}
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <button
+                                                        className="p-1 rounded hover:bg-zinc-700/60 text-zinc-500 hover:text-white transition-colors"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    >
+                                                        <MoreHorizontal className="w-4 h-4" />
+                                                    </button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent className="bg-[#111] border-zinc-800 text-white min-w-[160px]" align="end">
+                                                    <DropdownMenuItem
+                                                        className="text-xs text-zinc-300 hover:text-white hover:bg-zinc-800 cursor-pointer gap-2"
+                                                        onClick={(e) => { e.stopPropagation(); openGenerate(tmpl); }}
+                                                    >
+                                                        <Wand2 className="w-3.5 h-3.5 text-indigo-400" />Generate Document
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator className="bg-zinc-800" />
+                                                    <DropdownMenuItem
+                                                        className="text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 cursor-pointer gap-2"
+                                                        onClick={(e) => { e.stopPropagation(); setDeleteTarget(tmpl.name); }}
+                                                    >
+                                                        <Trash2 className="w-3.5 h-3.5" />Delete Template
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </div>
                                     </div>
 
                                     {tmpl.variables.length > 0 && (
@@ -323,6 +407,27 @@ export default function TemplatesPage() {
                         <DialogTitle className="text-white">Upload Template</DialogTitle>
                         <DialogDescription className="text-zinc-400">Upload a DOCX or PPTX file. Variables will be auto-detected from {`{{placeholder}}`} tags.</DialogDescription>
                     </DialogHeader>
+                    {/* Department selector */}
+                    <div className="space-y-1.5">
+                        <Label className="text-xs text-zinc-400 font-semibold uppercase tracking-wider">Department</Label>
+                        <div className="flex gap-2">
+                            {([
+                                { value: "sdr", label: "SDR", icon: Users },
+                                { value: "finance", label: "Finance", icon: Wallet },
+                                { value: "legal", label: "Legal", icon: ShieldCheck },
+                            ] as const).map(({ value, label, icon: Icon }) => (
+                                <button
+                                    key={value}
+                                    onClick={() => setUploadDepartment(value)}
+                                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border text-xs font-semibold transition-all ${uploadDepartment === value
+                                        ? value === "finance" ? "bg-amber-500/15 text-amber-400 border-amber-500/30" : value === "legal" ? "bg-violet-500/15 text-violet-400 border-violet-500/30" : "bg-indigo-500/15 text-indigo-400 border-indigo-500/30"
+                                        : "bg-zinc-900 text-zinc-500 border-zinc-800 hover:border-zinc-700 hover:text-white"}`}
+                                >
+                                    <Icon className="w-3.5 h-3.5" />{label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
                     <div
                         className="p-8 border-2 border-dashed border-zinc-700 rounded-xl text-center cursor-pointer hover:border-indigo-500/50 transition-colors"
                         onClick={() => fileInputRef.current?.click()}

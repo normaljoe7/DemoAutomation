@@ -154,3 +154,14 @@ class AppSettings(Base):
     key = Column(String(255), unique=True, nullable=False, index=True)
     value = Column(JSON, nullable=True)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class Notification(Base):
+    __tablename__ = "notifications"
+    id = Column(Integer, primary_key=True, index=True)
+    message = Column(Text, nullable=False)
+    type = Column(String(50), default="info")  # info, approved, rejected
+    document_id = Column(Integer, ForeignKey("documents.id"), nullable=True)
+    lead_name = Column(String(255), nullable=True)
+    doc_type = Column(String(100), nullable=True)
+    is_read = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
