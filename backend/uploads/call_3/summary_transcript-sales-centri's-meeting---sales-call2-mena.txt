@@ -1,0 +1,1725 @@
+[0:01] Ishtiaq Tonse:
+Sharing my screen.
+
+[0:01] Ishtiaq Tonse:
+Let's start it.
+
+[0:01] Ishtiaq Tonse:
+So let me first introduce this product to you.
+
+[0:01] Ishtiaq Tonse:
+So we've broken this down into three parts just for layman's understanding.
+
+[0:01] Ishtiaq Tonse:
+So we call the website as the face of the product.
+
+[0:01] Ishtiaq Tonse:
+And then we have something which is sales CPT.
+
+[0:01] Ishtiaq Tonse:
+We call it as the heart.
+
+[0:01] Ishtiaq Tonse:
+And we have a dashboard, which we call it the brain.
+
+[0:01] Ishtiaq Tonse:
+So the reason we call it the phase is it gives you all the information
+
+[0:37] Ishtiaq Tonse:
+that a salesperson or a partner would need or even a customer.
+
+[0:37] Ishtiaq Tonse:
+It has all the resources, all the case studies
+
+[0:37] Ishtiaq Tonse:
+and everything to just look at
+
+[0:37] Ishtiaq Tonse:
+and understand what can what can sales entry be right or what it does.
+
+[0:37] Ishtiaq Tonse:
+And we call the GPT the hardest
+
+[0:37] Ishtiaq Tonse:
+because we really want the vision is to have sales sentry.
+
+[0:37] Ishtiaq Tonse:
+as a place where a salesperson goes
+
+[1:03] Ishtiaq Tonse:
+and discusses problem and gets a solution instead of getting redirected or giving recommendations.
+
+[1:03] Ishtiaq Tonse:
+For example, if you go to Google, it will say, hey, go to this link, go to that link.
+
+[1:03] Ishtiaq Tonse:
+This is the paid promotions and the paid ads that come in.
+
+[1:03] Ishtiaq Tonse:
+Or if you go to GPs, they just say,
+
+[1:03] Ishtiaq Tonse:
+hey, you do this, you do that,
+
+[1:03] Ishtiaq Tonse:
+but I can't really help you, but I can just tell you what you need to do.
+
+[1:03] Ishtiaq Tonse:
+Right.
+
+[1:25] Ishtiaq Tonse:
+So no one out there is actually giving you a solution.
+
+[1:25] Ishtiaq Tonse:
+They're just giving a recommendation or redirecting you to a different place.
+
+[1:25] Ishtiaq Tonse:
+So hence, we call this as a heart to heart companion where you come and discuss whether you are.
+
+[1:25] Ishtiaq Tonse:
+So we have personas which are working on which are industry specific.
+
+[1:25] Ishtiaq Tonse:
+So and then we have event specific.
+
+[1:25] Ishtiaq Tonse:
+So in case you're participating in events
+
+[1:47] Ishtiaq Tonse:
+or you're focusing on events, then
+
+[1:47] Ishtiaq Tonse:
+if you're an agency or a marketer
+
+[1:47] Ishtiaq Tonse:
+or if you're a founder or a CEO, and then there are custom models as well, right?
+
+[1:47] Ishtiaq Tonse:
+So we've tried to make it as foolproof, as easy as possible.
+
+[1:47] Ishtiaq Tonse:
+And we're trying to work that out.
+
+[1:47] Ishtiaq Tonse:
+And the brain is the dashboard because all the action and all these,
+
+[1:47] Ishtiaq Tonse:
+back-end work happens at the dashboard.
+
+[1:47] Ishtiaq Tonse:
+So far so good.
+
+[1:47] Ishtiaq Tonse:
+Let me start with this process.
+
+[2:26] Ishtiaq Tonse:
+You can always stop me whenever you feel that you have a need.
+
+[2:26] Ishtiaq Tonse:
+We have a couple of modes.
+
+[2:26] Ishtiaq Tonse:
+If you could just understand that briefly.
+
+[2:26] Ishtiaq Tonse:
+We have something called lightening mode where in this mode,
+
+[2:26] Ishtiaq Tonse:
+you just need to put your website
+
+[2:26] Ishtiaq Tonse:
+and it automatically decides everything
+
+[2:26] Ishtiaq Tonse:
+for you from understanding what business you are in,
+
+[2:26] Ishtiaq Tonse:
+what your target ICP or your customer profile should be,
+
+[2:50] Ishtiaq Tonse:
+and it also gives you a sample in a couple of minutes or a couple of seconds rather, right?
+
+[2:50] Ishtiaq Tonse:
+Focus mode is for people who are absolutely want to get into details
+
+[2:50] Ishtiaq Tonse:
+and try to understand exactly
+
+[2:50] Ishtiaq Tonse:
+how this entire thing happens
+
+[2:50] Ishtiaq Tonse:
+and they have a choice to, let's say, customize it as much as they want.
+
+[2:50] Ishtiaq Tonse:
+Right and then we have a discover mode
+
+[2:50] Ishtiaq Tonse:
+which is truly for people who just want to understand
+
+[3:17] Ishtiaq Tonse:
+and not go to different GPT's or different places like Google to get their information right.
+
+[3:17] Ishtiaq Tonse:
+So let me just show you discover more.
+
+[3:17] Ishtiaq Tonse:
+So let's say give me a list of 10 company or let's say 10 top hotels in Dubai.
+
+[3:17] Ishtiaq Tonse:
+So basically, you can have a conversation, try to discover what you want to achieve and do here.
+
+[3:17] Ishtiaq Tonse:
+So it will ask you certain questions and give you those answers.
+
+[3:17] Ishtiaq Tonse:
+Right.
+
+[3:54] Ishtiaq Tonse:
+So then let's say you want to go into details of who is the CEO of these hotels.
+
+[3:54] Ishtiaq Tonse:
+So it gives you those information.
+
+[3:54] Ishtiaq Tonse:
+All right.
+
+[3:54] Ishtiaq Tonse:
+so but because of the privacy norms we do not give out the information
+
+[3:54] Ishtiaq Tonse:
+so for example you ask saying
+
+[3:54] Ishtiaq Tonse:
+that give me the contact info of these decision makers
+
+[3:54] Ishtiaq Tonse:
+so it validates it and then it comes back and says hey i can't provide it because of so and so reasons all right so
+
+[4:37] Ishtiaq Tonse:
+that's that's what the discovery mode does
+
+[4:37] Ishtiaq Tonse:
+and you have a you can always go back
+
+[4:37] Ishtiaq Tonse:
+and check this out yourself the website is open you just need to sign up
+
+[4:37] Ishtiaq Tonse:
+and for about three to four queries it's absolutely without sign up
+
+[4:37] Ishtiaq Tonse:
+so you don't even have to sign up
+
+[4:37] Ishtiaq Tonse:
+so you can test it out next is the lightning mode so here in the lightning mode
+
+[4:59] Ishtiaq Tonse:
+so i can just so there are different types of questions it does ask you so i
+
+[5:08] Abdul Mueed:
+Yeah, I just have like I'm not sure
+
+[5:08] Abdul Mueed:
+if it is for everyone, but I see the presentation
+
+[5:08] Abdul Mueed:
+that you're showing very pixelated, so I'm not able to make out what's the text.
+
+[5:08] Abdul Mueed:
+Maybe if it's I'm not sure if it's for everyone.
+
+[5:08] Abdul Mueed:
+Maybe we can turn off the videos to give a better.
+
+[5:08] Abdul Mueed:
+Bandwidth yeah, now it is better.
+
+[5:30] Ishtiaq Tonse:
+OK, is it for everyone?
+
+[5:34] Faten AbdulLatif:
+Yeah, it's it's for me, but now it's it's OK.
+
+[5:37] MATAR Cyril:
+Oh no, it's better.
+
+[5:38] Adil Arif:
+Yeah, it's better.
+
+[5:39] Ishtiaq Tonse:
+Let me just turn off the video as well so.
+
+[5:39] Ishtiaq Tonse:
+Let me just do that.
+
+[5:39] Ishtiaq Tonse:
+OK, maybe you'll also have to turn off your video.
+
+[5:39] Ishtiaq Tonse:
+Is this better?
+
+[5:57] Adil Arif:
+Yes, it's better.
+
+[6:00] Ishtiaq Tonse:
+Cool, so here you can actually.
+
+[6:00] Ishtiaq Tonse:
+So sometimes you just have to refresh, and let's say this is my website.
+
+[6:00] Ishtiaq Tonse:
+So give me a website that you want to explore.
+
+[6:00] Ishtiaq Tonse:
+Just give me a website randomly
+
+[6:00] Ishtiaq Tonse:
+that maybe is one of your client currently or you're trying to pursue or in the pipeline.
+
+[6:19] Abdul Mueed:
+And you want to explore.
+
+[6:21] Ishtiaq Tonse:
+How do you spell that?
+
+[6:23] Abdul Mueed:
+See why I like X. And I actually want.
+
+[6:23] Abdul Mueed:
+C-Y-L-I-X dot A-I.
+
+[6:32] Ishtiaq Tonse:
+Is this right?
+
+[6:34] Abdul Mueed:
+Yeah.
+
+[6:35] Ishtiaq Tonse:
+So let me just check.
+
+[6:35] Ishtiaq Tonse:
+So lightning mode is for people
+
+[6:35] Ishtiaq Tonse:
+who want things quickly, but they want to go into the details or don't have an understanding of how to go into details.
+
+[6:35] Ishtiaq Tonse:
+And they're like founders or small medium enterprises, right?
+
+[6:35] Ishtiaq Tonse:
+Or people not from the marketing and sales background.
+
+[6:35] Ishtiaq Tonse:
+So let's say, which product or service are you focusing on?
+
+[6:59] Ishtiaq Tonse:
+So it automatically does the details and then gives you all the information here.
+
+[6:59] Ishtiaq Tonse:
+So you don't have to go through the process of identifying all the details.
+
+[6:59] Ishtiaq Tonse:
+It automatically went through the details and provided the information.
+
+[6:59] Ishtiaq Tonse:
+And then here you click on generate prospects.
+
+[7:24] Abdul Mueed:
+But it says it is North American company.
+
+[7:24] Abdul Mueed:
+The Silex AI is our company anyway.
+
+[7:34] Ishtiaq Tonse:
+Yeah, one second.
+
+[7:34] Ishtiaq Tonse:
+Let me just check.
+
+[7:34] Ishtiaq Tonse:
+Is this the right URL?
+
+[7:39] Abdul Mueed:
+Let me just put it up.
+
+[7:39] Abdul Mueed:
+Would that is the right is the one
+
+[7:43] Tanzeem H:
+but yeah, this is the way it says is your ideal target audience target market is North America.
+
+[7:43] Tanzeem H:
+It's not where you're based out of.
+
+[7:43] Tanzeem H:
+Okay, identify is the ideal target market that you need to go after.
+
+[7:43] Tanzeem H:
+So if you can go back to that query again,
+
+[7:43] Tanzeem H:
+it's there and so basically it says target region in the beginning
+
+[8:03] Abdul Mueed:
+and not at the end I was saying in the beginning also it was I read somewhere.
+
+[8:03] Abdul Mueed:
+It is as it's a North American company.
+
+[8:03] Abdul Mueed:
+If you go to the top.
+
+[8:03] Abdul Mueed:
+This is a North American technology partner.
+
+[8:03] Abdul Mueed:
+Specializing in high performance computing.
+
+[8:22] Ishtiaq Tonse:
+Let me just try this out again.
+
+[8:22] Ishtiaq Tonse:
+Maybe I just loaded the old one, so let me just maybe my mistake.
+
+[8:22] Ishtiaq Tonse:
+One second.
+
+[8:22] Ishtiaq Tonse:
+Let me just type this.
+
+[8:22] Ishtiaq Tonse:
+This is the right one.
+
+[9:07] Abdul Mueed:
+Okay, I think maybe there's some company name conflict.
+
+[9:07] Abdul Mueed:
+Maybe in America also there might be a silence.
+
+[9:07] Abdul Mueed:
+Let us go with the next steps, it's fine.
+
+[9:15] Ishtiaq Tonse:
+Okay, so let me just go to the generate part.
+
+[9:15] Ishtiaq Tonse:
+So while this generates, it takes a couple of seconds.
+
+[9:15] Ishtiaq Tonse:
+So let me just show you the focus mode.
+
+[9:15] Ishtiaq Tonse:
+So, I'll just showcase the difference between focus mode and this one, so that you are able to relate.
+
+[9:15] Ishtiaq Tonse:
+So, focus mode here, it asks you to go
+
+[9:15] Ishtiaq Tonse:
+through the process of answering these questions as to what your objective is.
+
+[9:15] Ishtiaq Tonse:
+Adil, we've gone through this,
+
+[9:46] Ishtiaq Tonse:
+but I'm just, for the interest of others, I'm just showcasing this.
+
+[9:46] Ishtiaq Tonse:
+So, you say, I want to create a new list, and then you put the website here again.
+
+[9:46] Ishtiaq Tonse:
+Then you click on enter.
+
+[9:46] Ishtiaq Tonse:
+Are you focusing on B2B clients?
+
+[9:46] Ishtiaq Tonse:
+Ideally, yes, I think, right?
+
+[9:46] Ishtiaq Tonse:
+Yeah, and what what industry would you be focusing on?
+
+[10:10] Cyril Matar:
+All of them.
+
+[10:11] Abdul Mueed:
+For now, transportation, let us be precise.
+
+[10:14] Faten AbdulLatif:
+Yeah, transportation.
+
+[10:23] Ishtiaq Tonse:
+What's the revenue side that you'd be looking at?
+
+[10:23] Ishtiaq Tonse:
+What companies would you want to target?
+
+[10:23] Ishtiaq Tonse:
+What revenue size should they be at?
+
+[10:31] Abdul Mueed:
+That's the one with the company, right?
+
+[10:36] Ishtiaq Tonse:
+Yes, the income that you're trying to focus 111.
+
+[10:38] Abdul Mueed:
+Yeah, but that is in transportation.
+
+[10:38] Abdul Mueed:
+That is very less, but that is okay.
+
+[10:38] Abdul Mueed:
+Let's go with that.
+
+[10:45] Ishtiaq Tonse:
+Okay, I say, should they be having.
+
+[10:45] Ishtiaq Tonse:
+51 to 200.
+
+[10:51] Abdul Mueed:
+Yeah.
+
+[10:51] Abdul Mueed:
+Yeah.
+
+[11:03] Ishtiaq Tonse:
+Which, uh, so let's say North America see suit.
+
+[11:03] Ishtiaq Tonse:
+What titles are you looking at?
+
+[11:11] Abdul Mueed:
+Um, engineering.
+
+[11:12] Adil Arif:
+Most probably I would say procurement.
+
+[11:17] Cyril Matar:
+Or engineering engineering is a good option.
+
+[11:17] Cyril Matar:
+Hello?
+
+[11:24] Abdul Mueed:
+Yeah, yes, sir.
+
+[11:26] Cyril Matar:
+Yeah, it was better to put directly Dubai.
+
+[11:26] Cyril Matar:
+Why we put North America?
+
+[11:32] Abdul Mueed:
+No, we have not selected it.
+
+[11:34] Ishtiaq Tonse:
+It is just kept it without selection.
+
+[11:34] Ishtiaq Tonse:
+Engineering and marketing.
+
+[11:34] Ishtiaq Tonse:
+I missed the other one engine.
+
+[11:43] Abdul Mueed:
+How's the engineering and procurement?
+
+[11:45] Ishtiaq Tonse:
+That's fine, OK?
+
+[11:45] Ishtiaq Tonse:
+So now if you go through this, it will automatically summarize what you've selected.
+
+[11:45] Ishtiaq Tonse:
+And then it will start going through your website now.
+
+[11:45] Ishtiaq Tonse:
+And let's see if this mode is able to get the right information about your website.
+
+[11:45] Ishtiaq Tonse:
+So it's going to take about 20 seconds
+
+[11:45] Ishtiaq Tonse:
+because it's going to go through all of your pages and try to understand.
+
+[11:45] Ishtiaq Tonse:
+So just let me know if this is right.
+
+[12:40] Adil Arif:
+Does this make sense?
+
+[12:40] Adil Arif:
+Yeah, this is correct, yeah.
+
+[12:45] Ishtiaq Tonse:
+OK.
+
+[12:45] Ishtiaq Tonse:
+Cool.
+
+[12:45] Ishtiaq Tonse:
+So we can either define whether we have our ideal customer profile understood,
+
+[12:45] Ishtiaq Tonse:
+or let's assume for now you do not understand your ideal customer profile and you want the AI to help you.
+
+[12:45] Ishtiaq Tonse:
+So we just ask it to do that.
+
+[12:45] Ishtiaq Tonse:
+So it will automatically do the research.
+
+[12:45] Ishtiaq Tonse:
+do some public searches and all of those things at the back end and come back.
+
+[13:14] Ishtiaq Tonse:
+So maybe the lightning mode, while this pulls up, maybe because I pushed it, it's too fast.
+
+[13:14] Ishtiaq Tonse:
+Maybe something or the other might have gone wrong.
+
+[13:14] Ishtiaq Tonse:
+I'll have to analyze it and come back to you.
+
+[13:14] Ishtiaq Tonse:
+So here it gives you your ICP, and it tells you what you need to focus on.
+
+[13:14] Ishtiaq Tonse:
+Just have a look at it and let me know, does that make sense?
+
+[13:14] Ishtiaq Tonse:
+So in a way, it actually revalidates certain things.
+
+[13:38] Ishtiaq Tonse:
+So are you able to see my screen?
+
+[13:41] Adil Arif:
+Yeah, yeah.
+
+[13:42] Cyril Matar:
+Yeah.
+
+[13:42] Cyril Matar:
+Okay.
+
+[13:44] Ishtiaq Tonse:
+All right.
+
+[13:44] Ishtiaq Tonse:
+So it does give you those information
+
+[13:44] Ishtiaq Tonse:
+and then it says, because you're using our product,
+
+[13:44] Ishtiaq Tonse:
+it automatically promotes the PSA, the pre-sales automation that we're currently using.
+
+[13:44] Ishtiaq Tonse:
+And it say, why don't you go ahead and do that?
+
+[13:44] Ishtiaq Tonse:
+Okay.
+
+[13:44] Ishtiaq Tonse:
+Now, when you click on start prospect, this is gonna do a lot of backend work
+
+[13:44] Ishtiaq Tonse:
+in terms of going through multiple pages multiple databases
+
+[14:10] Ishtiaq Tonse:
+and multiple algorithms to come back
+
+[14:10] Ishtiaq Tonse:
+and tell you that okay this is a sample list
+
+[14:10] Ishtiaq Tonse:
+that you can look forward for
+
+[14:10] Ishtiaq Tonse:
+and go and test it out if required
+
+[14:10] Ishtiaq Tonse:
+and if you want to further drill down into going live
+
+[14:10] Ishtiaq Tonse:
+and want for further access to a larger database then you need to go through a process so if you look at it it does give you the
+
+[14:32] Ishtiaq Tonse:
+details of the companies and then it gives you the CEOs and the other information.
+
+[14:32] Ishtiaq Tonse:
+But because we are compliant with GDPR
+
+[14:32] Ishtiaq Tonse:
+and other things, we cannot display some of the PI.
+
+[14:32] Ishtiaq Tonse:
+Hence, we have it as hash.
+
+[14:32] Ishtiaq Tonse:
+So here it just showcases.
+
+[14:32] Ishtiaq Tonse:
+And then if you want
+
+[14:32] Ishtiaq Tonse:
+want to export it into a pdf you can export it
+
+[14:32] Ishtiaq Tonse:
+or if you want to export it to an excel you can export
+
+[14:53] Abdul Mueed:
+that uh right i'm pronouncing your name right yes yes absolutely yes yeah again
+
+[14:53] Abdul Mueed:
+if you go back to the left of the table my my i'm a bit confused maybe just if you could explain me because we are focusing on transportation right
+
+[14:53] Abdul Mueed:
+But if you see these companies, the industry,
+
+[14:53] Abdul Mueed:
+they are coming from tech solutions
+
+[14:53] Abdul Mueed:
+and learning industries, technology
+
+[15:22] Abdul Mueed:
+and IT, where they're very far away from transportation and logistics.
+
+[15:33] Faten AbdulLatif:
+Actually, to add on top of that,
+
+[15:33] Faten AbdulLatif:
+if we can see the justification why your model selected or proposed these customers, what's the logic behind it?
+
+[15:33] Faten AbdulLatif:
+Because yeah, what's the link between the list and what the targeted customer?
+
+[15:51] Ishtiaq Tonse:
+So answering your question first,
+
+[15:51] Ishtiaq Tonse:
+so whatever your criteria's are, basis this, it will automatically identify the customer
+
+[15:51] Ishtiaq Tonse:
+bases are historical trained models
+
+[15:51] Ishtiaq Tonse:
+so it will go through the database
+
+[15:51] Ishtiaq Tonse:
+and try to say that okay for this industry
+
+[15:51] Ishtiaq Tonse:
+and this company size and this kind of a product these are the fitments
+
+[15:51] Ishtiaq Tonse:
+that fit in and it will implement
+
+[15:51] Ishtiaq Tonse:
+that it also does some public research
+
+[16:21] Ishtiaq Tonse:
+and then say that okay if this company falls in this bucket then these are the ideal customer that it needs to go with
+
+[16:21] Ishtiaq Tonse:
+Can't hear you, sorry.
+
+[16:39] Tanzeem H:
+The company, I think it's analyzing company and you know, identifying.
+
+[16:39] Tanzeem H:
+You know companies from the other industries as well.
+
+[16:39] Tanzeem H:
+That's an ideal, you know, target prospect for Silex.
+
+[16:39] Tanzeem H:
+I think it's not just focusing on the industry
+
+[16:39] Tanzeem H:
+that you put in which is transportation
+
+[16:39] Tanzeem H:
+and logistics, but since you put in the company web address,
+
+[16:39] Tanzeem H:
+I think it did a search on the company,
+
+[17:00] Tanzeem H:
+analyzed research and said these are the ideal customers that you can focus apart from transportation.
+
+[17:00] Tanzeem H:
+I mean, I'm just thinking out loud.
+
+[17:07] Abdul Mueed:
+Yeah, no, no.
+
+[17:07] Abdul Mueed:
+So let me tell you, I was just trying to think from a technical angle.
+
+[17:07] Abdul Mueed:
+Yes, that makes sense what you're saying, Tanzeem.
+
+[17:07] Abdul Mueed:
+But if we are like, you know,
+
+[17:07] Abdul Mueed:
+if you're seeing this from a client perspective,
+
+[17:07] Abdul Mueed:
+you know, because the idea is I am a technology company, yes, for sure.
+
+[17:07] Abdul Mueed:
+But I do not want to go and serve the technology people.
+
+[17:07] Abdul Mueed:
+I want to go and serve to a domain
+
+[17:29] Abdul Mueed:
+that is like transportation and logistics where my software excels.
+
+[17:34] Ishtiaq Tonse:
+Agreed.
+
+[17:34] Ishtiaq Tonse:
+So let me just clarify that, right?
+
+[17:34] Ishtiaq Tonse:
+So first, did I answer your question, Fatim?
+
+[17:42] Faten AbdulLatif:
+Yes, partially.
+
+[17:43] Ishtiaq Tonse:
+Okay.
+
+[17:43] Ishtiaq Tonse:
+Yeah.
+
+[17:43] Ishtiaq Tonse:
+The second question, I think here I will have to look back because over the weekend, we've done a lot of changes.
+
+[17:43] Ishtiaq Tonse:
+So we merged a lot of models together.
+
+[17:43] Ishtiaq Tonse:
+Okay.
+
+[17:43] Ishtiaq Tonse:
+So to answer your question, the industry should have been transportation.
+
+[17:43] Ishtiaq Tonse:
+okay so there is something that i'll have to check
+
+[17:43] Ishtiaq Tonse:
+and come back like i mentioned about lightning mode uh it was too quick
+
+[18:05] Ishtiaq Tonse:
+because i've done a lot of demos today the lighting mode was very quick
+
+[18:05] Ishtiaq Tonse:
+so it should not be the case so maybe uh some implementation over the weekend
+
+[18:05] Ishtiaq Tonse:
+that we've done might have had something yes something might have had a
+
+[18:05] Ishtiaq Tonse:
+challenge because we've implemented lightning mode just yesterday right so i think that might have overlapped with something here so
+
+[18:05] Ishtiaq Tonse:
+being very uh truthful and clear
+
+[18:28] Ishtiaq Tonse:
+so i think that's where it is
+
+[18:30] Cyril Matar:
+so what i would uh request is maybe i missed one part of the of the answer
+
+[18:30] Cyril Matar:
+that you wanted to i've had them asked for example let's take um the last one 19 oaks
+
+[18:30] Cyril Matar:
+Do we know why it selected 19 Oaks based on the 3 million?
+
+[18:30] Cyril Matar:
+I don't know how many entities you said you have.
+
+[18:30] Cyril Matar:
+So it selected 10, right?
+
+[18:30] Cyril Matar:
+I want to know for each one of these why it was selected.
+
+[18:30] Cyril Matar:
+How can I get this information?
+
+[19:00] Ishtiaq Tonse:
+So the answer to the question is this disclaimer.
+
+[19:00] Ishtiaq Tonse:
+So we prioritize companies that are globally and publicly available in terms of data.
+
+[19:00] Ishtiaq Tonse:
+Right, so it's randomly selects the first 10 companies basis of criteria.
+
+[19:00] Ishtiaq Tonse:
+It does a fitment score and then displace it.
+
+[19:22] Abdul Mueed:
+So let's assume that so one of the prerequisites then
+
+[19:22] Abdul Mueed:
+for this is these companies should be LLM optimized, right?
+
+[19:22] Abdul Mueed:
+I mean, because if you're doing a research
+
+[19:22] Abdul Mueed:
+and trying to extract information like on this research,
+
+[19:22] Abdul Mueed:
+like you're doing a deep research on the sector
+
+[19:22] Abdul Mueed:
+and all the inputs that have been given and based on that you're picking these right?
+
+[19:22] Abdul Mueed:
+So you're doing a deep research on the sector and
+
+[19:44] Ishtiaq Tonse:
+It is a combination of LLMs.
+
+[19:44] Ishtiaq Tonse:
+It's a combination of any digital presence.
+
+[19:44] Ishtiaq Tonse:
+As long as they're digitally present,
+
+[19:44] Ishtiaq Tonse:
+so let's say a company does not have a website
+
+[19:44] Ishtiaq Tonse:
+or has any news or any kind of digital footprint, then that company would not come in here.
+
+[19:44] Ishtiaq Tonse:
+But how are these companies selected?
+
+[19:44] Ishtiaq Tonse:
+They're randomly selected.
+
+[19:44] Ishtiaq Tonse:
+There is no prioritization as to
+
+[19:44] Ishtiaq Tonse:
+what logic, but there's a fitment score in the backend
+
+[20:07] Ishtiaq Tonse:
+which says, okay, for these criteria, these are the sample just randomly showcase.
+
+[20:07] Ishtiaq Tonse:
+so i'll take you to the dashboard
+
+[20:07] Ishtiaq Tonse:
+where most of your questions will further get answered okay
+
+[20:07] Ishtiaq Tonse:
+and you'll be able to understand uh why we can show only
+
+[20:07] Ishtiaq Tonse:
+so much of information and why not
+
+[20:07] Ishtiaq Tonse:
+so let me just uh show you so here uh
+
+[20:27] Tanzeem H:
+before that if you can also i if you can also showcase the multiple lms that they can select as to how deep they want to research sure
+
+[20:36] Ishtiaq Tonse:
+I'll take you through that.
+
+[20:36] Ishtiaq Tonse:
+Here, this is something that you need to understand because we are compliant.
+
+[20:36] Ishtiaq Tonse:
+We cannot show any information unless the customer does sign up.
+
+[20:36] Ishtiaq Tonse:
+Here, I'm using a demo ID, but ideally, a customer will have to, let me just show.
+
+[20:55] Cyril Matar:
+Can you please showcase the result because we want to see the results of the end client.
+
+[20:55] Cyril Matar:
+This is without a signup.
+
+[20:55] Cyril Matar:
+Imagine we are signing up,
+
+[20:55] Cyril Matar:
+and you want to get the complete information also
+
+[20:55] Cyril Matar:
+for these public uh returns it means randomly selected then also it's not
+
+[20:55] Cyril Matar:
+that interesting for us what we need is a tailor-made uh result
+
+[20:55] Cyril Matar:
+for uh research that was done
+
+[20:55] Cyril Matar:
+so let us move forward very quickly
+
+[21:19] Cyril Matar:
+since up until now we're still not yet uh into the um real topic or read subjects absolutely absolutely
+
+[21:28] Ishtiaq Tonse:
+So let's go there.
+
+[21:28] Ishtiaq Tonse:
+So what I was trying to say is here there are certain terms
+
+[21:28] Ishtiaq Tonse:
+and conditions that they have to agree to before they get the access to the real data.
+
+[21:28] Ishtiaq Tonse:
+OK, so let me just go back to this.
+
+[21:28] Ishtiaq Tonse:
+Uh, because Tanjim was requesting, let me just quickly show what he was mentioning.
+
+[21:28] Ishtiaq Tonse:
+So you have an option here called.
+
+[21:28] Ishtiaq Tonse:
+Multi aggregated so it relates to your question that you asked earlier.
+
+[21:28] Ishtiaq Tonse:
+So here.
+
+[21:52] Ishtiaq Tonse:
+You can actually go back and select multiple models
+
+[21:52] Ishtiaq Tonse:
+that are available and select what you want to do with the research.
+
+[21:52] Ishtiaq Tonse:
+And then that particular model gets selected
+
+[21:52] Ishtiaq Tonse:
+and you can have all the research at one go from multiple LLMs.
+
+[21:52] Ishtiaq Tonse:
+Alright, and the topics also can be selected.
+
+[21:52] Ishtiaq Tonse:
+Alright, so in one place we have a consolidated all available LLMs in the market.
+
+[21:52] Ishtiaq Tonse:
+okay so now coming back to your points
+
+[22:23] Ishtiaq Tonse:
+so let's let's assume that we are uh we've created the list
+
+[22:23] Ishtiaq Tonse:
+so when you click on the dashboard view dashboard option here you will be landed to
+
+[22:23] Ishtiaq Tonse:
+the dashboard and that list is will be created here okay so you can see all the
+
+[22:23] Ishtiaq Tonse:
+contacts here and then you can click on customize
+
+[22:23] Ishtiaq Tonse:
+so in case you feel that the ai
+
+[22:23] Ishtiaq Tonse:
+or the gpt did not actually find the right one then you can edit the filter
+
+[22:57] Ishtiaq Tonse:
+and you can do your own search on the database of three point
+
+[22:57] Ishtiaq Tonse:
+or 390 million then there's a fitment check
+
+[22:57] Ishtiaq Tonse:
+that happens which automatically checks this identified contacts whether they fit the will or not and then it gives a score here
+
+[22:57] Ishtiaq Tonse:
+saying what is the fitment score basis,
+
+[22:57] Ishtiaq Tonse:
+what they do versus what you're trying to position or sell.
+
+[22:57] Ishtiaq Tonse:
+And then you can start your research in
+
+[23:23] Ishtiaq Tonse:
+that once you click on research is going to take time, so I'm not going to do so it's a deep research that you do.
+
+[23:23] Ishtiaq Tonse:
+So once you click on start research, it will go
+
+[23:23] Ishtiaq Tonse:
+through a research in depth, and then it will get you the details of each of those customers here before you do a campaign.
+
+[23:23] Ishtiaq Tonse:
+And it gives you a customized pitch
+
+[23:23] Ishtiaq Tonse:
+for that particular customer, depending on the designation
+
+[23:47] Ishtiaq Tonse:
+and the company with five different options to start your engagement and automatically suggest some time zones for reach out.
+
+[23:47] Ishtiaq Tonse:
+Plus, it gives you an option to customize your follow-ups
+
+[23:47] Ishtiaq Tonse:
+as to when you want to follow up,
+
+[23:47] Ishtiaq Tonse:
+and if you want the e-mail thread
+
+[23:47] Ishtiaq Tonse:
+because this is something that some customers prefer to have when they follow up.
+
+[24:12] Ishtiaq Tonse:
+This is available and you can customize the frequency, but these are pre-fed automated options.
+
+[24:12] Ishtiaq Tonse:
+Then you have a research list
+
+[24:12] Ishtiaq Tonse:
+and a prospects list that you can click on and you get that data.
+
+[24:12] Ishtiaq Tonse:
+Let me just show you a sample of that.
+
+[24:12] Ishtiaq Tonse:
+So something like this is what it creates.
+
+[24:12] Ishtiaq Tonse:
+When you click on the email, so
+
+[24:12] Ishtiaq Tonse:
+what it does is it identifies that particular company.
+
+[24:41] Ishtiaq Tonse:
+So it goes into your website and tries to identify the product that are available.
+
+[24:41] Ishtiaq Tonse:
+I've not done it for your website.
+
+[24:41] Ishtiaq Tonse:
+I'm just showing you a sample.
+
+[24:41] Ishtiaq Tonse:
+So it talks about Tesla as to what are the components.
+
+[24:41] Ishtiaq Tonse:
+This is a manufacturing automobile company.
+
+[24:41] Ishtiaq Tonse:
+so it tells them what tesla can use of their product
+
+[24:41] Ishtiaq Tonse:
+and they want to expand into the us
+
+[25:03] Ishtiaq Tonse:
+and then it also gives you product wise as to what product can be sold for which company and where
+
+[25:12] Abdul Mueed:
+If I do not want to use my website
+
+[25:12] Abdul Mueed:
+as the source information, like
+
+[25:12] Abdul Mueed:
+for example, I have a product
+
+[25:12] Abdul Mueed:
+and I want to focus thing on my product where I will complete product catalog, things like that.
+
+[25:12] Abdul Mueed:
+And if I want to see the prospects based only on this product, can we do that?
+
+[25:30] Ishtiaq Tonse:
+Yeah, so currently you can, if we have it digitally available on a OneDrive or also Google Drive, yes, you can do that.
+
+[25:30] Ishtiaq Tonse:
+But in case you want to have a upload option of the files from your system, that also can be possible.
+
+[25:30] Ishtiaq Tonse:
+But currently it is all digital, it's not a print media.
+
+[25:30] Ishtiaq Tonse:
+So here it gives you the details of
+
+[25:30] Ishtiaq Tonse:
+which products can fit in where so which is nothing but this particular.
+
+[26:05] Ishtiaq Tonse:
+Download the research file and the prospect list is nothing but this particular Excel file.
+
+[26:05] Ishtiaq Tonse:
+So it will give you two sheets, one with the.
+
+[26:05] Ishtiaq Tonse:
+Details of one moment.
+
+[26:05] Ishtiaq Tonse:
+And we built custom models, which I'll take you
+
+[26:05] Ishtiaq Tonse:
+through the latest stage when we have multiple discussion in the future, let me just open this.
+
+[26:05] Ishtiaq Tonse:
+OK, so.
+
+[26:05] Ishtiaq Tonse:
+So it comes up and says this company is trying to expand in the US,
+
+[27:05] Ishtiaq Tonse:
+so it will give you the company name,
+
+[27:05] Ishtiaq Tonse:
+headquarters, the website, what revenue they are at, employee size, industry.
+
+[27:05] Ishtiaq Tonse:
+And if you want these headers to be added differently, we can do that.
+
+[27:05] Ishtiaq Tonse:
+And then it tells you what product will fit is a good fit for that particular customer and use case wise as well.
+
+[27:05] Ishtiaq Tonse:
+What is the particular product
+
+[27:05] Ishtiaq Tonse:
+that use case wise that will fit for that particular company?
+
+[27:27] Ishtiaq Tonse:
+Now, coming to the question that was asked,
+
+[27:27] Ishtiaq Tonse:
+if I want to go very specific with my criteria
+
+[27:27] Ishtiaq Tonse:
+and focus on generating contacts myself without investing time on the GPT,
+
+[27:27] Ishtiaq Tonse:
+then in that case, you can just go take your criteria, define your criteria on a Word document, or you can directly type it there.
+
+[27:27] Ishtiaq Tonse:
+So you can just go to the dashboard
+
+[27:27] Ishtiaq Tonse:
+and then you have an option here
+
+[27:27] Ishtiaq Tonse:
+where you can go to the contacts
+
+[27:51] Ishtiaq Tonse:
+and then you have an AI assistant
+
+[27:51] Ishtiaq Tonse:
+where you can just type it and it should give you the results from our database.
+
+[27:51] Ishtiaq Tonse:
+Okay, so you can get this data here,
+
+[27:51] Ishtiaq Tonse:
+and you'll get all the fields
+
+[27:51] Ishtiaq Tonse:
+that you're looking at that are required, irrespective of the region.
+
+[28:12] Cyril Matar:
+Okay, can we know what is the source of the data that you have and how it's being updated?
+
+[28:19] Ishtiaq Tonse:
+Sure, so currently we have a 390 million records,
+
+[28:19] Ishtiaq Tonse:
+so the source of data is we have close to about 2000 odd vendors
+
+[28:19] Ishtiaq Tonse:
+that deal with us who are compliant and we have public sources that we pull data from.
+
+[28:19] Ishtiaq Tonse:
+We do a lot of scraping for news articles,
+
+[28:19] Ishtiaq Tonse:
+we look at social media handles, so anything that is disclosed by the individual itself
+
+[28:19] Ishtiaq Tonse:
+is something that we pull.
+
+[28:49] Ishtiaq Tonse:
+So there are multiple things that happen in the backend, and this data is updated every 30 years.
+
+[28:54] Cyril Matar:
+If I want now the name of some people here in Dubai
+
+[28:54] Cyril Matar:
+and some of the companies, is there an option
+
+[28:54] Cyril Matar:
+that we will be able to have their contacts directly without running this whole process?
+
+[28:54] Cyril Matar:
+For example, today I want the contact of Microsoft CEO maybe in the UAE.
+
+[29:18] Ishtiaq Tonse:
+Sure, sure you can.
+
+[29:18] Ishtiaq Tonse:
+You can go ahead and do that so you just have to type in the query and you should be able to get that.
+
+[29:24] Cyril Matar:
+Can you can you write it please?
+
+[29:26] Ishtiaq Tonse:
+Sure I can do that.
+
+[29:49] Cyril Matar:
+You cannot try directly, OK?
+
+[29:52] Ishtiaq Tonse:
+No, I can't write that, but it's not going to be visible there.
+
+[29:52] Ishtiaq Tonse:
+So I'm just typing it here because I can save this data for the next demos as well.
+
+[30:23] Cyril Matar:
+Hello, you're still here.
+
+[30:25] Ishtiaq Tonse:
+Yes, can you hear me?
+
+[30:27] Cyril Matar:
+Yeah, now we can hear.
+
+[30:29] Ishtiaq Tonse:
+Yeah.
+
+[30:29] Ishtiaq Tonse:
+So it's given you 34 results.
+
+[30:29] Ishtiaq Tonse:
+Of people in the ID space.
+
+[30:29] Ishtiaq Tonse:
+The I cannot put yes, I've not put Microsoft specifically.
+
+[30:40] Cyril Matar:
+I've just.
+
+[30:43] Ishtiaq Tonse:
+So these are 36 contacts that we could identify.
+
+[30:43] Ishtiaq Tonse:
+And plus you can add or remove the columns that you need.
+
+[30:43] Ishtiaq Tonse:
+And reprioritize if you don't need any so you can customize this view.
+
+[30:43] Ishtiaq Tonse:
+So this is this is the different in the GPT.
+
+[30:43] Ishtiaq Tonse:
+It's more of people who are first time with our digital marketing campaigns who come in.
+
+[30:43] Ishtiaq Tonse:
+We just try to show them what the tool can do,
+
+[31:09] Ishtiaq Tonse:
+but what you see on the dashboard is for someone who's a regular user.
+
+[31:09] Ishtiaq Tonse:
+They can just come here and export the data or do the campaigns.
+
+[31:17] Cyril Matar:
+um look uh i'm so sorry because we have another internal meeting at 8 15 from our end
+
+[31:17] Cyril Matar:
+what we will want uh for next time uh
+
+[31:17] Cyril Matar:
+or if you want uh maybe you can uh record it
+
+[31:17] Cyril Matar:
+if we give a use case just you will tell us an actual use case
+
+[31:17] Cyril Matar:
+because as of now we couldn't follow from the beginning till now we are not following an
+
+[31:17] Cyril Matar:
+actual use case that is a real use case that can be seen so uh
+
+[31:46] Cyril Matar:
+Maybe I missed some parts of this presentation,
+
+[31:46] Cyril Matar:
+but what we will be doing, we will give you an actual use case
+
+[31:46] Cyril Matar:
+you record it if you want or you showcase it to us
+
+[31:46] Cyril Matar:
+and we'll have actual results on an actual thing
+
+[31:46] Cyril Matar:
+that we can sell at the end of the day uh adil uh adil presented you to uh to us in order
+
+[31:46] Cyril Matar:
+for for us to see whether there is an opportunity to sell your product here in the
+
+[32:17] Cyril Matar:
+uae with the things that we saw we think it's still not ready to be sold honestly speaking i'm talking on behalf of the team
+
+[32:17] Cyril Matar:
+If you want us to sell your product, you need to have an actual use case
+
+[32:17] Cyril Matar:
+that is relevant for us, that is from end to end working with all the models,
+
+[32:17] Cyril Matar:
+with an actual result, with an actual campaign, with an actual, now it's still a draft.
+
+[32:17] Cyril Matar:
+It is still a good idea.
+
+[32:49] Cyril Matar:
+It is still good.
+
+[32:49] Cyril Matar:
+I don't know, for how many people you already sold your product in the world?
+
+[32:56] Ishtiaq Tonse:
+still uh let me correct you and add to it uh it's not in a poc
+
+[32:56] Ishtiaq Tonse:
+or a mvp stage we already have 17 clients
+
+[33:04] Cyril Matar:
+and across the okay right and
+
+[33:06] Ishtiaq Tonse:
+what i would request and maybe put it
+
+[33:06] Ishtiaq Tonse:
+across in that 30 minutes of call will not uh i'll not be able to cover use cases do a demo show the features right
+
+[33:06] Ishtiaq Tonse:
+so we have to be realistic there
+
+[33:06] Ishtiaq Tonse:
+as well so if the objective was a use case i can share your use case i have one of the largest real estate company of india working with us
+
+[33:25] Cyril Matar:
+i have one of the largest healthcare company of the united states working with us we have access on all the real estate agencies here in the uae
+
+[33:25] Cyril Matar:
+if you manage to convince me i will sell your product
+
+[33:25] Cyril Matar:
+for all real estate agencies here in dubai so let us do one thing try to create a use case for a real estate agency in dubai
+
+[33:48] Ishtiaq Tonse:
+Okay, so let me just show it.
+
+[33:48] Ishtiaq Tonse:
+We still have five minutes.
+
+[33:48] Ishtiaq Tonse:
+So let me show you a real estate case.
+
+[33:48] Ishtiaq Tonse:
+So we are doing.
+
+[33:48] Ishtiaq Tonse:
+So can you see my screen quickly?
+
+[33:48] Ishtiaq Tonse:
+Yeah.
+
+[33:48] Ishtiaq Tonse:
+Okay.
+
+[33:48] Ishtiaq Tonse:
+So this is for India.
+
+[33:48] Ishtiaq Tonse:
+They're the largest public limited real estate company.
+
+[33:48] Ishtiaq Tonse:
+And they are launching a product in this particular,
+
+[33:48] Ishtiaq Tonse:
+they're launching a project in this particular zip code.
+
+[34:10] Ishtiaq Tonse:
+562125 and what we were able to do is we are able to identify all the people
+
+[34:10] Ishtiaq Tonse:
+who are living or working around these areas in the five kilometer radius
+
+[34:10] Ishtiaq Tonse:
+and also be able to come to a conclusion
+
+[34:10] Ishtiaq Tonse:
+as to what is the salary that they have
+
+[34:10] Ishtiaq Tonse:
+what is the buying power that they have
+
+[34:10] Ishtiaq Tonse:
+and what are the other information
+
+[34:10] Ishtiaq Tonse:
+that we can pull in to say that okay instead of these uh looking at the entire
+
+[34:31] Ishtiaq Tonse:
+bangalore in india you can focus on only this 84 000 and then we further sliced it to 5000 people that they could target
+
+[34:31] Ishtiaq Tonse:
+And we were able to sell about five flats with that data in about 15 days.
+
+[34:44] Cyril Matar:
+I have a question.
+
+[34:44] Cyril Matar:
+If I manage to get a list of all the people
+
+[34:44] Cyril Matar:
+that are living here around me
+
+[34:44] Cyril Matar:
+and we manage to sell the solution to this real estate agency
+
+[34:44] Cyril Matar:
+and the person who got contacted, they tell us, he asks, from where did you get my contact?
+
+[34:44] Cyril Matar:
+What can they say?
+
+[34:44] Cyril Matar:
+Can they say the name of your company?
+
+[35:05] Ishtiaq Tonse:
+Absolutely.
+
+[35:05] Ishtiaq Tonse:
+They can say the name of the company, one.
+
+[35:05] Ishtiaq Tonse:
+And secondly, whatever information is available.
+
+[35:05] Ishtiaq Tonse:
+So let's say we reach out to them.
+
+[35:05] Ishtiaq Tonse:
+Let's say you give me a Dubai project.
+
+[35:05] Ishtiaq Tonse:
+We'll figure out the individuals, the companies that they work at, the designation.
+
+[35:05] Ishtiaq Tonse:
+And basically, those algorithms will derive the kind of estimated salaries they are at,
+
+[35:23] Ishtiaq Tonse:
+as well as they'll be able to get business emails and other information to target them.
+
+[35:23] Ishtiaq Tonse:
+So what I can assure you is we are compliant
+
+[35:23] Ishtiaq Tonse:
+and the only thing I could call out is UAE is, to be fair and clear, UAE is a new market that we're entering.
+
+[35:23] Ishtiaq Tonse:
+We've explored UK, Europe, Australia, US and India.
+
+[35:23] Ishtiaq Tonse:
+So something that I would urge
+
+[35:23] Ishtiaq Tonse:
+or request is it's going to be a more of a partnership
+
+[35:46] Ishtiaq Tonse:
+where we both have to collaboratively work and whatever you expect from us, we'll try our best to deliver.
+
+[35:51] Cyril Matar:
+Look, look what you do.
+
+[35:51] Cyril Matar:
+Since we have a use case, a real estate agency in the UAE,
+
+[35:51] Cyril Matar:
+what I will want is from you to prepare a use case for the real estate market in Dubai.
+
+[35:51] Cyril Matar:
+We'll give you an area.
+
+[35:51] Cyril Matar:
+We'll send it to you, and you will tell us
+
+[35:51] Cyril Matar:
+if you have the data, and if you can target people,
+
+[36:15] Cyril Matar:
+and how did you choose the people, from where did you get the data, and how did you generate the report for the agency?
+
+[36:24] Ishtiaq Tonse:
+Agreed.
+
+[36:24] Ishtiaq Tonse:
+We'll do that.
+
+[36:26] Cyril Matar:
+No problem.
+
+[36:26] Cyril Matar:
+Okay.
+
+[36:26] Cyril Matar:
+Absolutely, let us do this if.
+
+[36:26] Cyril Matar:
+If I manage.
+
+[36:37] Ishtiaq Tonse:
+For you, I've made a note of it.
+
+[36:37] Ishtiaq Tonse:
+I'll send over the minutes and we'll take the next steps.
+
+[36:37] Ishtiaq Tonse:
+So yeah, you were saying if we manage to.
+
+[36:45] Cyril Matar:
+No, that's it.
+
+[36:45] Cyril Matar:
+Let us see the results because it can be an actual use case in real estate in Dubai.
+
+[36:45] Cyril Matar:
+If you convince us, I will see
+
+[36:45] Cyril Matar:
+how we can schedule a meeting with one of the real estate agencies
+
+[36:45] Cyril Matar:
+and they will tell us whether it's relevant or not because we need to confirm.
+
+[36:45] Cyril Matar:
+I cannot sell a solution if today I can give you one million contacts in Dubai.
+
+[37:10] Cyril Matar:
+But are these contacts real leads for what I'm trying to do?
+
+[37:10] Cyril Matar:
+No one knows.
+
+[37:10] Cyril Matar:
+This is the most important part.
+
+[37:10] Cyril Matar:
+It's the quality of the data, the quality of the leads.
+
+[37:10] Cyril Matar:
+If you are just listing contacts, this is why we are asking about
+
+[37:10] Cyril Matar:
+what are the criteria that you are using
+
+[37:10] Cyril Matar:
+and how you are filtering and how you are generating the end result.
+
+[37:10] Cyril Matar:
+This is the most important thing that Fatin asked.
+
+[37:10] Cyril Matar:
+So as of now...
+
+[37:38] Cyril Matar:
+Data source, also you said you have trusted partners,
+
+[37:38] Cyril Matar:
+but how can we know how are you getting your data?
+
+[37:38] Cyril Matar:
+How can we know how you are filtering the data
+
+[37:38] Cyril Matar:
+and how can we know if it's accurate or not at the end of the day?
+
+[37:38] Cyril Matar:
+So it's very interesting, it's a very promising tool, but once more,
+
+[37:38] Cyril Matar:
+What is lacking is some actual use case.
+
+[38:03] Cyril Matar:
+So now, let us know if one day you are ready to present us an actual use case for the real estate industry in Dubai.
+
+[38:03] Cyril Matar:
+If you have it, we'll be more than happy to help you enter the market in here.
+
+[38:03] Cyril Matar:
+Okay?
+
+[38:16] Ishtiaq Tonse:
+Sure.
+
+[38:16] Ishtiaq Tonse:
+I'll be able to present you India's use case and we can do a POC in Dubai.
+
+[38:22] Cyril Matar:
+yeah please and while replying to the main questions this data source uh
+
+[38:22] Cyril Matar:
+that the criteria that you are using in order to choose
+
+[38:22] Cyril Matar:
+whether it's a lead or not and uh i don't know
+
+[38:22] Cyril Matar:
+how we can validate it at the end of the day i won't be able to validate
+
+[38:22] Cyril Matar:
+and i the the companies in here they have their own strn they have a list of a lot of contacts i don't know the
+
+[38:48] Cyril Matar:
+I don't know maybe you will be using the same data sources
+
+[38:48] Cyril Matar:
+as the real estate agencies that are here this is why the question of a data source is really important
+
+[38:48] Cyril Matar:
+for us because if you tell me this is my data source I can cross check
+
+[38:48] Cyril Matar:
+if it's the same data source that the real estate agencies are using here in Dubai
+
+[38:48] Cyril Matar:
+because they have some data sources got it you see
+
+[39:06] Cyril Matar:
+what I mean so let us be really well prepared really well armed in order for
+
+[39:12] Ishtiaq Tonse:
+us to be able to send your solution absolutely makes sense and I think it's fair
+
+[39:17] Cyril Matar:
+okay great ishiak thank you so much
+
+[39:17] Cyril Matar:
+and team thank you so much for this presentation
+
+[39:17] Cyril Matar:
+and looking forward for the once you are ready let us know absolutely thank you very much thanks thank you bye-bye thank you
+

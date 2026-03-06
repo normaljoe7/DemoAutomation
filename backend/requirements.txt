@@ -7,6 +7,8 @@ docxtpl
 python-pptx
 comtypes
 sqlalchemy
+pymysql
+python-dotenv
 redis
 celery
 python-multipart

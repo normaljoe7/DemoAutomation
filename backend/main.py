@@ -3,17 +3,73 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from database import engine, get_db
 from auth import get_current_user, create_access_token, get_password_hash, verify_password, ACCESS_TOKEN_EXPIRE_MINUTES
-from datetime import timedelta
+from datetime import timedelta, datetime
 from pydantic import BaseModel
 from typing import Optional, List
 import models
 import json
 import os
 
-# Create all tables
+# Create all tables (handles new tables; existing tables won't be modified automatically)
 models.Base.metadata.create_all(bind=engine)
+
+# ── MySQL column-addition migrations ──────────────────────────────────────────
+# Safely add new columns to existing tables if they don't already exist.
+def _col_exists(conn, table: str, column: str) -> bool:
+    result = conn.execute(text(
+        "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS "
+        "WHERE TABLE_SCHEMA = DATABASE() "
+        "AND TABLE_NAME = :table AND COLUMN_NAME = :column"
+    ), {"table": table, "column": column})
+    return result.scalar() > 0
+
+_LEAD_COLUMNS = [
+    ("name",                  "VARCHAR(255)"),
+    ("job_title",             "VARCHAR(255)"),
+    ("company",               "VARCHAR(255)"),
+    ("website",               "VARCHAR(500)"),
+    ("lead_status",           "VARCHAR(50)  DEFAULT 'NOT CLASSIFIED'"),
+    ("demo_status",           "VARCHAR(100)"),
+    ("demo_sub_status",       "VARCHAR(100)"),
+    ("demo_time",             "VARCHAR(255)"),
+    ("teams_link",            "VARCHAR(500)"),
+    ("bubbles_link",          "VARCHAR(500)"),
+    ("last_contact",          "DATETIME"),
+    ("follow_up_date",        "DATETIME"),
+    ("call_rating",           "INTEGER DEFAULT 0"),
+    ("transcript_text",       "TEXT"),
+    ("summary_text",          "TEXT"),
+    ("action_items_text",     "TEXT"),
+    # KYC fields
+    ("legal_name",            "VARCHAR(255)"),
+    ("gst_number",            "VARCHAR(50)"),
+    ("registered_address",    "TEXT"),
+    ("contact_person",        "VARCHAR(255)"),
+    # Document tracking fields
+    ("requested_docs",        "JSON"),
+    ("selected_documents",    "JSON"),
+    ("generated_docs",        "JSON"),
+    ("generated_doc_urls",    "JSON"),
+    ("custom_field_values",   "JSON"),
+]
+
+_DOCUMENT_COLUMNS = [
+    ("lead_id",       "INTEGER"),
+    ("filename",      "VARCHAR(500)"),
+    ("download_url",  "VARCHAR(500)"),
+]
+
+with engine.connect() as conn:
+    for col, col_type in _LEAD_COLUMNS:
+        if not _col_exists(conn, "leads", col):
+            conn.execute(text(f"ALTER TABLE leads ADD COLUMN {col} {col_type}"))
+    for col, col_type in _DOCUMENT_COLUMNS:
+        if not _col_exists(conn, "documents", col):
+            conn.execute(text(f"ALTER TABLE documents ADD COLUMN {col} {col_type}"))
+    conn.commit()
 
 app = FastAPI(
     title="AI SDR Command Center",
@@ -53,37 +109,134 @@ def read_users_me(current_user: models.User = Depends(get_current_user)):
 
 # ──────────────────── LEADS ────────────────────
 class LeadCreate(BaseModel):
+    # Contact
+    name: Optional[str] = None
+    job_title: Optional[str] = None
+    company: Optional[str] = None
+    website: Optional[str] = None
+    email: str
+    phone: Optional[str] = None
+    # KYC
     legal_name: Optional[str] = None
     gst_number: Optional[str] = None
     registered_address: Optional[str] = None
     contact_person: Optional[str] = None
-    email: str
-    phone: Optional[str] = None
+    # Pipeline
+    lead_status: Optional[str] = "NOT CLASSIFIED"
+    demo_status: Optional[str] = None
+    demo_sub_status: Optional[str] = None
+    demo_time: Optional[str] = None
+    # Meeting links
+    teams_link: Optional[str] = None
+    bubbles_link: Optional[str] = None
+    # Dates (accept ISO strings)
+    last_contact: Optional[str] = None
+    follow_up_date: Optional[str] = None
+    # Post-call
+    call_rating: Optional[int] = 0
+    transcript_text: Optional[str] = None
+    summary_text: Optional[str] = None
+    action_items_text: Optional[str] = None
+    # Document tracking
+    requested_docs: Optional[List] = None
+    selected_documents: Optional[List] = None
+    generated_docs: Optional[List] = None
+    generated_doc_urls: Optional[dict] = None
+    custom_field_values: Optional[dict] = None
+
+def _parse_dt(val: Optional[str]) -> Optional[datetime]:
+    if not val:
+        return None
+    for fmt in ("%Y-%m-%dT%H:%M", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d"):
+        try:
+            return datetime.strptime(val[:len(fmt)], fmt)
+        except (ValueError, TypeError):
+            continue
+    return None
 
 @app.get("/api/v1/leads")
 def list_leads(db: Session = Depends(get_db)):
-    leads = db.query(models.Lead).all()
-    return [{"id":l.id,"legal_name":l.legal_name,"email":l.email,"phone":l.phone,
-             "contact_person":l.contact_person,"gst_number":l.gst_number,
-             "registered_address":l.registered_address} for l in leads]
+    leads = db.query(models.Lead).order_by(models.Lead.id.desc()).all()
+    result = []
+    for l in leads:
+        result.append({
+            "id": l.id,
+            "name": l.name,
+            "job_title": l.job_title,
+            "company": l.company,
+            "website": l.website,
+            "email": l.email,
+            "phone": l.phone,
+            "legal_name": l.legal_name,
+            "gst_number": l.gst_number,
+            "registered_address": l.registered_address,
+            "contact_person": l.contact_person,
+            "lead_status": l.lead_status,
+            "demo_status": l.demo_status,
+            "demo_sub_status": l.demo_sub_status,
+            "demo_time": l.demo_time,
+            "teams_link": l.teams_link,
+            "bubbles_link": l.bubbles_link,
+            "last_contact": l.last_contact.isoformat() if l.last_contact else None,
+            "follow_up_date": l.follow_up_date.isoformat() if l.follow_up_date else None,
+            "call_rating": l.call_rating,
+            "transcript_text": l.transcript_text,
+            "summary_text": l.summary_text,
+            "action_items_text": l.action_items_text,
+            "requested_docs": l.requested_docs or [],
+            "selected_documents": l.selected_documents or [],
+            "generated_docs": l.generated_docs or [],
+            "generated_doc_urls": l.generated_doc_urls or {},
+            "custom_field_values": l.custom_field_values or {},
+            "created_at": l.created_at.isoformat() if l.created_at else None,
+        })
+    return result
 
-@app.post("/api/v1/leads")
+@app.post("/api/v1/leads", status_code=201)
 def create_lead(lead: LeadCreate, db: Session = Depends(get_db)):
-    db_lead = models.Lead(**lead.dict())
+    data = lead.dict()
+    data["last_contact"] = _parse_dt(data.pop("last_contact", None))
+    data["follow_up_date"] = _parse_dt(data.pop("follow_up_date", None))
+    db_lead = models.Lead(**data)
     db.add(db_lead)
     db.commit()
     db.refresh(db_lead)
-    return {"id": db_lead.id}
+    return {"id": db_lead.id, "status": "created"}
 
 @app.put("/api/v1/leads/{lead_id}")
 def update_lead(lead_id: int, lead: LeadCreate, db: Session = Depends(get_db)):
     db_lead = db.query(models.Lead).filter(models.Lead.id == lead_id).first()
     if not db_lead:
         raise HTTPException(status_code=404, detail="Lead not found")
-    for key, val in lead.dict(exclude_unset=True).items():
-        setattr(db_lead, key, val)
+    data = lead.dict(exclude_unset=True)
+    if "last_contact" in data:
+        data["last_contact"] = _parse_dt(data["last_contact"])
+    if "follow_up_date" in data:
+        data["follow_up_date"] = _parse_dt(data["follow_up_date"])
+    # JSON fields — set directly without transformation
+    json_fields = {"requested_docs", "selected_documents", "generated_docs", "generated_doc_urls", "custom_field_values"}
+    for key, val in data.items():
+        if key in json_fields:
+            setattr(db_lead, key, val)
+        elif key not in ("last_contact", "follow_up_date"):
+            setattr(db_lead, key, val)
+    # Handle date fields separately
+    if "last_contact" in data:
+        db_lead.last_contact = data["last_contact"]
+    if "follow_up_date" in data:
+        db_lead.follow_up_date = data["follow_up_date"]
     db.commit()
-    return {"status": "updated"}
+    db.refresh(db_lead)
+    return {"status": "updated", "id": db_lead.id}
+
+@app.delete("/api/v1/leads/{lead_id}", status_code=200)
+def delete_lead(lead_id: int, db: Session = Depends(get_db)):
+    db_lead = db.query(models.Lead).filter(models.Lead.id == lead_id).first()
+    if not db_lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    db.delete(db_lead)
+    db.commit()
+    return {"status": "deleted"}
 
 # ──────────────────── PRE-CALL ────────────────────
 @app.post("/api/v1/precall/trigger")
@@ -184,17 +337,53 @@ class DocGenRequest(BaseModel):
     template_name: str
     data: dict
     convert_pdf: bool = False
+    lead_id: Optional[int] = None
+    doc_type: Optional[str] = None  # e.g. "invoice", "quotation", "contract"
 
 @app.post("/api/v1/documents/generate")
-def generate_document(req: DocGenRequest):
+def generate_document(req: DocGenRequest, db: Session = Depends(get_db)):
     from document_service import generate_document as gen
     try:
         result = gen(req.template_name, req.data, req.convert_pdf)
-        return result
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except RuntimeError as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+    # Persist document record to documents table only
+    if req.lead_id and req.doc_type:
+        filename = result.get("filename", "")
+        download_url = f"/api/v1/documents/{filename}/download"
+
+        doc_record = models.Document(
+            lead_id=req.lead_id,
+            type=req.doc_type,
+            filename=filename,
+            file_path=result.get("docx_path", ""),
+            download_url=download_url,
+            status="generated",
+        )
+        db.add(doc_record)
+        db.commit()
+
+    return result
+
+@app.get("/api/v1/leads/{lead_id}/documents")
+def list_lead_documents(lead_id: int, db: Session = Depends(get_db)):
+    """Return all documents generated for a given lead."""
+    docs = db.query(models.Document).filter(models.Document.lead_id == lead_id).order_by(models.Document.created_at.desc()).all()
+    return [
+        {
+            "id": d.id,
+            "type": d.type,
+            "filename": d.filename,
+            "file_path": d.file_path,
+            "download_url": d.download_url,
+            "status": d.status,
+            "created_at": d.created_at.isoformat() if d.created_at else None,
+        }
+        for d in docs
+    ]
 
 @app.get("/api/v1/documents/{filename}/download")
 def download_document(filename: str):
@@ -224,6 +413,48 @@ def send_document_email(id: int, req: EmailSendRequest, db: Session = Depends(ge
     # In production, integrate SMTP/SendGrid here
     return {"status": "sent", "to": req.to, "subject": req.subject}
 
+# ──────────────────── RESCHEDULE EMAIL ────────────────────
+class RescheduleEmailRequest(BaseModel):
+    lead_id: int
+    new_datetime: str          # ISO string for the rescheduled demo
+    teams_link: Optional[str] = None
+    to_email: str
+    cc_emails: List[str] = []
+    lead_name: str
+    company: str
+    sender_name: str = "SDR Team"
+
+@app.post("/api/v1/leads/{lead_id}/reschedule")
+def reschedule_demo(lead_id: int, req: RescheduleEmailRequest, db: Session = Depends(get_db)):
+    """Update demo_time (and optionally teams_link) and record a reschedule email dispatch."""
+    db_lead = db.query(models.Lead).filter(models.Lead.id == lead_id).first()
+    if not db_lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+
+    # Save the new demo time
+    db_lead.demo_time = req.new_datetime
+    if req.teams_link:
+        db_lead.teams_link = req.teams_link
+    db_lead.demo_status = "Demo Rescheduled"
+    db.commit()
+
+    # Build email log (in production replace with SMTP/SendGrid)
+    email_payload = {
+        "to": req.to_email,
+        "cc": req.cc_emails,
+        "subject": f"Demo Rescheduled: {req.company} — New Booking Confirmation",
+        "body": (
+            f"Dear {req.lead_name},\n\n"
+            f"We wanted to inform you that your demo has been rescheduled.\n\n"
+            f"New Date & Time: {req.new_datetime}\n"
+            + (f"Meeting Link: {req.teams_link}\n" if req.teams_link else "")
+            + f"\nPlease confirm your availability. We look forward to speaking with you.\n\n"
+            f"Best regards,\n{req.sender_name}"
+        ),
+    }
+    # TODO: plug in SMTP / SendGrid / Resend here
+    return {"status": "rescheduled", "email": email_payload}
+
 # ──────────────────── KB ────────────────────
 @app.get("/api/v1/kb/me")
 def get_kb(db: Session = Depends(get_db)):
@@ -236,3 +467,66 @@ def update_kb(db: Session = Depends(get_db)):
 @app.post("/api/v1/kb/preview")
 def preview_kb(db: Session = Depends(get_db)):
     return {"preview": "success"}
+
+# ──────────────────── SETTINGS ────────────────────
+@app.get("/api/v1/settings")
+def get_settings(db: Session = Depends(get_db)):
+    rows = db.query(models.AppSettings).all()
+    return {r.key: r.value for r in rows}
+
+@app.put("/api/v1/settings")
+def update_settings(data: dict = Body(...), db: Session = Depends(get_db)):
+    for key, value in data.items():
+        row = db.query(models.AppSettings).filter(models.AppSettings.key == key).first()
+        if row:
+            row.value = value
+        else:
+            row = models.AppSettings(key=key, value=value)
+            db.add(row)
+    db.commit()
+    return {"status": "saved"}
+
+# ──────────────────── TRANSCRIPTS ────────────────────
+@app.get("/api/v1/transcripts")
+def list_transcripts(db: Session = Depends(get_db)):
+    """Return all leads that have transcript data."""
+    leads = db.query(models.Lead).filter(
+        models.Lead.transcript_text.isnot(None)
+    ).order_by(models.Lead.updated_at.desc()).all()
+    result = []
+    for l in leads:
+        result.append({
+            "id": l.id,
+            "leadName": l.name,
+            "company": l.company or "",
+            "email": l.email or "",
+            "lead_status": l.lead_status or "NOT CLASSIFIED",
+            "transcript_text": l.transcript_text,
+            "summary_text": l.summary_text,
+            "action_items_text": l.action_items_text,
+            "call_rating": l.call_rating or 0,
+            "last_contact": l.last_contact.isoformat() if l.last_contact else None,
+            "updated_at": l.updated_at.isoformat() if l.updated_at else None,
+        })
+    return result
+
+class TranscriptUpload(BaseModel):
+    lead_id: int
+    transcript_text: Optional[str] = None
+    summary_text: Optional[str] = None
+    action_items_text: Optional[str] = None
+
+@app.post("/api/v1/transcripts/upload-text")
+def upload_transcript_text(req: TranscriptUpload, db: Session = Depends(get_db)):
+    """Upload transcript/summary/action_items text directly to a lead record."""
+    lead = db.query(models.Lead).filter(models.Lead.id == req.lead_id).first()
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    if req.transcript_text is not None:
+        lead.transcript_text = req.transcript_text
+    if req.summary_text is not None:
+        lead.summary_text = req.summary_text
+    if req.action_items_text is not None:
+        lead.action_items_text = req.action_items_text
+    db.commit()
+    return {"status": "saved", "lead_id": lead.id}

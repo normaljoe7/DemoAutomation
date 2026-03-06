@@ -375,68 +375,84 @@ def perform_calculations(data):
 
 
     # 5. Grand Totals
-    # Total INR = taxable_inr + cgst + sgst + any generic tax calculated above if in INR context
+    # Compute grand totals per currency
+    extra_tax_inr = 0.0
+    if amount_usd == 0 and amount_inr > 0:
+        extra_tax_inr = calculated_generic_tax
+
+    total_inr = amounts.get('inr', 0.0) + cgst_amt + sgst_amt + extra_tax_inr
+    total_usd_val = amounts.get('usd', 0.0) + (calculated_generic_tax if amount_usd > 0 and calculated_generic_tax > 0 else 0.0)
+    total_generic_val = amounts.get('', 0.0) + cgst_amt + sgst_amt + calculated_generic_tax
+
     if 'inr' in amounts:
-        # Note: calculated_generic_tax might be in USD if USD amount existed. 
-        # So we should strictly add it only if it matches context? 
-        # For simplicity, existing logic used cgst_amt/sgst_amt.
-        
-        # Calculate Total INR
-        # Base Amount (INR) + CGST + SGST
-        # If we have a generic tax calculated in INR mode (check use_indian flag from loop above? tricky to track)
-        # Instead, let's rely on what we just wrote to calculated_data['tax_amount'] if it was INR?
-        # Better: use the numeric values we computed.
-        
-        # If the generic tax was calculated in INR context (because amount_inr > 0 and amount_usd == 0)
-        # then we add it. 
-        # Heuristic: If amount_usd is > 0, the generic tax is USD. If amount_usd is 0, it is INR.
-        
-        extra_tax_inr = 0.0
-        if amount_usd == 0 and amount_inr > 0:
-             extra_tax_inr = calculated_generic_tax
-        
-        total_inr = amounts['inr'] + cgst_amt + sgst_amt + extra_tax_inr
-        
-        # formatting...
         for k in calculated_data:
             if 'total' in k.lower() and 'inr' in k.lower():
                 if not calculated_data[k]: calculated_data[k] = format_indian_style(total_inr)
 
-    # Total USD = amount_usd 
     if 'usd' in amounts:
-        # If we calculated generic tax in USD, should we add it? 
-        # User complained Total Amount doesn't take GST into consideration.
-        # Assuming Total USD should include tax if tax was calculated on it.
-        total_usd = amounts['usd']
-        
-        # If we had a generic tax_rate applied to USD...
-        if amount_usd > 0 and calculated_generic_tax > 0:
-             # Heuristic: calculated_generic_tax is likely USD since amount_usd > 0 is Priority #1
-             total_usd += calculated_generic_tax
-
         for k in calculated_data:
             if 'total' in k.lower() and 'usd' in k.lower():
-                # Force strictly format with $
-                calculated_data[k] = f"${total_usd:,.2f}"
-        
-        
+                calculated_data[k] = f"${total_usd_val:,.2f}"
+
     # Generic "Total" (no suffix)
     if '' in amounts:
-        # If we have a generic price/amount, assume taxes apply to it too
-        total_generic = amounts[''] + cgst_amt + sgst_amt + calculated_generic_tax
+        total_generic = total_generic_val
         for k in calculated_data:
              k_lower = k.lower()
              if 'total' in k_lower and 'inr' not in k_lower and 'usd' not in k_lower:
                 if not calculated_data[k]: calculated_data[k] = f"{total_generic:,.2f}"
-              
+
              if ('tax' in k_lower or 'vat' in k_lower) and 'amount' in k_lower and 'rate' not in k_lower:
                   if not calculated_data[k]:
-                       # Sum of all taxes
                        total_tax = cgst_amt + sgst_amt + calculated_generic_tax
                        if total_tax > 0:
                             calculated_data[k] = f"{total_tax:,.2f}"
                        else:
                             calculated_data[k] = "0.00"
+
+    # 5b. Cascade to generic amount/total/payable keys (no currency suffix)
+    # Determine primary currency context for generic key filling
+    primary_is_inr = 'inr' in amounts and amounts['inr'] > 0
+    primary_is_usd = 'usd' in amounts and amounts['usd'] > 0
+
+    def _fmt_primary(val):
+        if primary_is_inr:
+            return f"₹{format_indian_style(val)}"
+        elif primary_is_usd:
+            return f"${val:,.2f}"
+        else:
+            return f"{val:,.2f}"
+
+    primary_base_amount = amounts.get('inr', amounts.get('usd', amounts.get('', 0.0)))
+    primary_grand_total = total_inr if primary_is_inr else (total_usd_val if primary_is_usd else total_generic_val)
+
+    for k in calculated_data:
+        if calculated_data[k]:
+            continue  # already filled, skip
+        k_lower = k.lower()
+
+        # Skip currency-suffixed keys (already handled above)
+        if k_lower.endswith('_inr') or k_lower.endswith('_usd') or k_lower.endswith('_eur') or k_lower.endswith('_gbp'):
+            continue
+
+        # Skip tax-specific keys
+        if any(t in k_lower for t in ['cgst', 'sgst', 'tax', 'gst', 'vat']):
+            continue
+
+        is_payable = any(w in k_lower for w in ['payable', 'due', 'net', 'gross', 'subtotal', 'sub_total', 'invoice_total', 'bill_total'])
+        is_total = 'total' in k_lower
+        is_amount = 'amount' in k_lower
+
+        if primary_base_amount > 0:
+            if is_payable or (is_total and is_amount):
+                # amount_payable, invoice_total → grand total
+                calculated_data[k] = _fmt_primary(primary_grand_total)
+            elif is_total and not is_amount:
+                # total (standalone) → grand total
+                calculated_data[k] = _fmt_primary(primary_grand_total)
+            elif is_amount and not is_total:
+                # amount (standalone) → base amount
+                calculated_data[k] = _fmt_primary(primary_base_amount)
                             
     # 7. Final Cleanup: Ensure calculated Tax fields do NOT have '%'
     # This acts as a final sanitizer in case initial formatting was aggressive

@@ -28,8 +28,44 @@ import {
     ChevronUp,
     Mic,
     RefreshCw,
+    AlertCircle,
+    Loader2,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
+
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+// Map a lead record (from /api/v1/transcripts) to the Transcript interface
+function apiToTranscript(l: any): Transcript {
+    const temp = l.lead_status === "HOT" ? "HOT" : l.lead_status === "COLD" ? "COLD" : "WARM";
+    const actionLines: string[] = (l.action_items_text || "")
+        .split("\n")
+        .map((s: string) => s.trim())
+        .filter((s: string) => s.length > 0);
+    const dateStr = l.last_contact || l.updated_at;
+    const date = dateStr
+        ? new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+        : "Unknown";
+    return {
+        id: String(l.id),
+        leadName: l.leadName || "(No name)",
+        company: l.company || "",
+        date,
+        duration: "—",
+        status: "processed",
+        talkRatio: 0,
+        temperature: temp as "HOT" | "WARM" | "COLD",
+        summary: l.summary_text || "",
+        actionItemsCount: actionLines.length,
+        actionItems: actionLines.map((line: string) => ({
+            task: line.replace(/^[-•*\d.]+\s*/, ""),
+            assignee: "—",
+            dueDate: "TBD",
+        })),
+        speakers: [],
+        fullText: l.transcript_text || "",
+    };
+}
 
 interface Transcript {
     id: string;
@@ -221,9 +257,33 @@ function generateAIResponse(question: string, transcript: Transcript): { answer:
 }
 
 export default function TranscriptsPage() {
-    const [selected, setSelected] = useState<Transcript | null>(mockTranscripts[0]);
+    const [transcripts, setTranscripts] = useState<Transcript[]>([]);
+    const [selected, setSelected] = useState<Transcript | null>(null);
+    const [loadingTranscripts, setLoadingTranscripts] = useState(true);
     const [uploadOpen, setUploadOpen] = useState(false);
     const [actionItemsOpen, setActionItemsOpen] = useState(false);
+
+    // Load transcripts from database on mount
+    const loadTranscripts = async () => {
+        setLoadingTranscripts(true);
+        try {
+            const res = await fetch(`${API}/api/v1/transcripts`);
+            if (!res.ok) throw new Error("Failed to fetch");
+            const data = await res.json();
+            const mapped: Transcript[] = data.map(apiToTranscript);
+            setTranscripts(mapped);
+            // Auto-select first if none selected
+            if (!selected && mapped.length > 0) setSelected(mapped[0]);
+        } catch {
+            // Keep empty — backend may not be running
+        } finally {
+            setLoadingTranscripts(false);
+        }
+    };
+
+    // Lead list for upload association
+    const [leads, setLeads] = useState<{ id: number; name: string; company: string }[]>([]);
+    const [uploadLeadId, setUploadLeadId] = useState<number | null>(null);
 
     // Chat state
     const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -232,6 +292,89 @@ export default function TranscriptsPage() {
     const [isTyping, setIsTyping] = useState(false);
     const chatEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLTextAreaElement>(null);
+
+    // ─── File Upload State ───
+    const [transcriptFile, setTranscriptFile] = useState<File | null>(null);
+    const [summaryFile, setSummaryFile] = useState<File | null>(null);
+    const [actionItemsFile, setActionItemsFile] = useState<File | null>(null);
+    const [uploading, setUploading] = useState(false);
+    const [uploadError, setUploadError] = useState<string | null>(null);
+    const [uploadSuccess, setUploadSuccess] = useState(false);
+    const transcriptFileRef = useRef<HTMLInputElement>(null);
+    const summaryFileRef = useRef<HTMLInputElement>(null);
+    const actionItemsFileRef = useRef<HTMLInputElement>(null);
+
+    const resetUploadState = () => {
+        setTranscriptFile(null);
+        setSummaryFile(null);
+        setActionItemsFile(null);
+        setUploadError(null);
+        setUploadSuccess(false);
+        setUploadLeadId(null);
+    };
+
+    const handleUploadFiles = async () => {
+        if (!transcriptFile && !summaryFile && !actionItemsFile) {
+            setUploadError("Please select at least one file to upload.");
+            return;
+        }
+        // Determine which lead to associate with
+        const targetLeadId = uploadLeadId ?? (selected ? parseInt(selected.id) : null);
+        if (!targetLeadId) {
+            setUploadError("Please select a lead to associate this transcript with.");
+            return;
+        }
+        setUploading(true);
+        setUploadError(null);
+        try {
+            const readText = (file: File): Promise<string> =>
+                new Promise((res, rej) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => res(e.target?.result as string ?? "");
+                    reader.onerror = rej;
+                    reader.readAsText(file);
+                });
+
+            const transcriptText = transcriptFile ? await readText(transcriptFile) : undefined;
+            const summaryText = summaryFile ? await readText(summaryFile) : undefined;
+            const actionItemsText = actionItemsFile ? await readText(actionItemsFile) : undefined;
+
+            const response = await fetch(`${API}/api/v1/transcripts/upload-text`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    lead_id: targetLeadId,
+                    transcript_text: transcriptText,
+                    summary_text: summaryText,
+                    action_items_text: actionItemsText,
+                }),
+            });
+            if (!response.ok) {
+                const errJson = await response.json().catch(() => ({}));
+                throw new Error((errJson as { detail?: string }).detail || `Upload failed (${response.status})`);
+            }
+
+            setUploadSuccess(true);
+            setTimeout(async () => {
+                setUploadOpen(false);
+                resetUploadState();
+                await loadTranscripts();
+            }, 1500);
+        } catch (err) {
+            setUploadError(err instanceof Error ? err.message : "Upload failed. Is the backend running?");
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    // Load transcripts and leads on mount
+    useEffect(() => {
+        loadTranscripts();
+        fetch(`${API}/api/v1/leads`)
+            .then(r => r.json())
+            .then((data: any[]) => setLeads(data.map(l => ({ id: l.id, name: l.name || "(No name)", company: l.company || "" }))))
+            .catch(() => { /* ignore */ });
+    }, []);
 
     // Reset chat when transcript changes
     useEffect(() => {
@@ -289,45 +432,62 @@ export default function TranscriptsPage() {
 
     return (
         <div className="flex flex-col h-full w-full">
-            <Header title="Transcripts & AI Analysis" subtitle="Post-call intelligence, speaker identification, and coaching insights." badgeText={`${mockTranscripts.length} Calls`} />
+            <Header title="Transcripts & AI Analysis" subtitle="Post-call intelligence, speaker identification, and coaching insights." badgeText={`${transcripts.length} Calls`} />
 
             <div className="flex-1 flex gap-6 p-8 pt-6 min-h-0 overflow-hidden">
                 {/* ─── Call List ─── */}
                 <div className="w-[32%] border border-zinc-800/60 rounded-xl bg-[#0c0c0c] overflow-hidden shadow-2xl flex flex-col h-full">
                     <div className="p-4 border-b border-zinc-800/60 flex items-center justify-between">
                         <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Recent Calls</p>
-                        <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white" onClick={() => setUploadOpen(true)}>
-                            <Upload className="w-3.5 h-3.5 mr-1.5" />Upload Transcript
-                        </Button>
+                        <div className="flex gap-1.5">
+                            <Button size="sm" variant="outline" className="border-zinc-700 text-zinc-400 hover:text-white h-7 px-2" onClick={loadTranscripts} disabled={loadingTranscripts}>
+                                <RefreshCw className={`w-3 h-3 ${loadingTranscripts ? "animate-spin" : ""}`} />
+                            </Button>
+                            <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white" onClick={() => setUploadOpen(true)}>
+                                <Upload className="w-3.5 h-3.5 mr-1.5" />Upload Transcript
+                            </Button>
+                        </div>
                     </div>
                     <div className="flex-1 overflow-y-auto divide-y divide-zinc-800/60">
-                        {mockTranscripts.map((t) => (
+                        {loadingTranscripts ? (
+                            <div className="flex items-center justify-center py-10 text-zinc-500 text-xs gap-2">
+                                <Loader2 className="w-4 h-4 animate-spin" />Loading transcripts…
+                            </div>
+                        ) : transcripts.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-12 text-zinc-600 px-4 text-center">
+                                <Mic className="w-8 h-8 mb-3" />
+                                <p className="text-sm font-medium">No transcripts yet</p>
+                                <p className="text-xs mt-1">Upload a transcript file or add transcript text to a lead on the Leads page.</p>
+                            </div>
+                        ) : (
+                            transcripts.map((t) => (
                             <div
                                 key={t.id}
                                 onClick={() => setSelected(t)}
-                                className={`p-4 cursor-pointer transition-all ${selected?.id === t.id ? "bg-zinc-800/40 border-l-2 border-indigo-500" : "hover:bg-zinc-800/20 border-l-2 border-transparent"}`}
-                            >
-                                <div className="flex items-center justify-between mb-2">
-                                    <div>
-                                        <p className="text-sm font-medium text-white">{t.leadName}</p>
-                                        <p className="text-xs text-zinc-500">{t.company}</p>
-                                    </div>
-                                    <Badge className={`text-[10px] uppercase tracking-wider rounded-sm px-2 shadow-none border ${t.status === "processed"
-                                        ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                                        : t.status === "pending"
-                                            ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
-                                            : "bg-zinc-800 text-zinc-400 border-zinc-700"
-                                        }`}>
-                                        {t.status}
-                                    </Badge>
-                                </div>
-                                <div className="flex items-center gap-3 text-xs text-zinc-500">
-                                    <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{t.date}</span>
-                                    <span>{t.duration}</span>
-                                    {t.actionItemsCount > 0 && <span className="text-indigo-400">{t.actionItemsCount} actions</span>}
-                                </div>
-                            </div>
-                        ))}
+                                    className={`p-4 cursor-pointer transition-all ${selected?.id === t.id ? "bg-zinc-800/40 border-l-2 border-indigo-500" : "hover:bg-zinc-800/20 border-l-2 border-transparent"}`}
+                                            >
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <div>
+                                                        <p className="text-sm font-medium text-white">{t.leadName}</p>
+                                                        <p className="text-xs text-zinc-500">{t.company}</p>
+                                                    </div>
+                                                    <Badge className={`text-[10px] uppercase tracking-wider rounded-sm px-2 shadow-none border ${t.status === "processed"
+                                                        ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                                                        : t.status === "pending"
+                                                            ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                                                            : "bg-zinc-800 text-zinc-400 border-zinc-700"
+                                                        }`}>
+                                                        {t.status}
+                                                    </Badge>
+                                                </div>
+                                                <div className="flex items-center gap-3 text-xs text-zinc-500">
+                                                    <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{t.date}</span>
+                                                    <span>{t.duration}</span>
+                                                    {t.actionItemsCount > 0 && <span className="text-indigo-400">{t.actionItemsCount} actions</span>}
+                                                </div>
+                                            </div>
+                                        ))
+                                        )}
                     </div>
                 </div>
 
@@ -611,23 +771,111 @@ export default function TranscriptsPage() {
             </Dialog>
 
             {/* Upload Dialog */}
-            <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
+            <Dialog open={uploadOpen} onOpenChange={(v) => { setUploadOpen(v); if (!v) resetUploadState(); }}>
                 <DialogContent className="bg-[#111] border-zinc-800 text-white max-w-md">
                     <DialogHeader>
                         <DialogTitle className="text-white">Upload Call Files</DialogTitle>
-                        <DialogDescription className="text-zinc-400">Upload transcript, summary, and action items from Bubbles export.</DialogDescription>
+                        <DialogDescription className="text-zinc-400">
+                            Upload transcript, summary, and action items. Select a lead to associate with.
+                        </DialogDescription>
                     </DialogHeader>
-                    <div className="space-y-3">
-                        {["Transcript (.txt, .vtt, .json)", "Summary (.txt, .json)", "Action Items (.txt, .json)"].map((label, i) => (
-                            <div key={i} className="p-4 border-2 border-dashed border-zinc-700 rounded-xl text-center cursor-pointer hover:border-indigo-500/50 transition-colors">
-                                <FileUp className="w-6 h-6 text-zinc-600 mx-auto mb-1" />
-                                <p className="text-xs text-zinc-400">{label}</p>
+
+                    {uploadSuccess ? (
+                        <div className="py-10 text-center">
+                            <CheckCircle2 className="w-14 h-14 text-emerald-500 mx-auto mb-3 animate-pulse" />
+                            <p className="text-emerald-400 font-semibold">Files uploaded successfully!</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            {/* Lead Selector */}
+                            <div>
+                                <p className="text-xs text-zinc-400 uppercase tracking-wider font-semibold mb-1.5">Associate with Lead</p>
+                                <select
+                                    className="w-full bg-zinc-900 border border-zinc-700 text-white rounded-md px-3 py-2 text-sm"
+                                    value={uploadLeadId ?? (selected ? parseInt(selected.id) : "")}
+                                    onChange={(e) => setUploadLeadId(e.target.value ? parseInt(e.target.value) : null)}
+                                >
+                                    <option value="">— Select a lead —</option>
+                                    {leads.map(l => (
+                                        <option key={l.id} value={l.id}>{l.name}{l.company ? ` (${l.company})` : ""}</option>
+                                    ))}
+                                </select>
                             </div>
-                        ))}
-                    </div>
+                            {/* Transcript */}
+                            <div
+                                className={`p-4 border-2 border-dashed rounded-xl text-center cursor-pointer transition-colors ${transcriptFile ? "border-emerald-500/50 bg-emerald-500/5" : "border-zinc-700 hover:border-indigo-500/50"}`}
+                                onClick={() => transcriptFileRef.current?.click()}
+                            >
+                                {transcriptFile ? (
+                                    <p className="text-sm text-emerald-400 flex items-center justify-center gap-2">
+                                        <CheckCircle2 className="w-4 h-4" />{transcriptFile.name}
+                                    </p>
+                                ) : (
+                                    <>
+                                        <FileUp className="w-6 h-6 text-zinc-600 mx-auto mb-1" />
+                                        <p className="text-xs text-zinc-400">Transcript (.txt, .vtt, .json)</p>
+                                        <p className="text-[10px] text-zinc-600 mt-0.5">Click to select file</p>
+                                    </>
+                                )}
+                            </div>
+                            <input ref={transcriptFileRef} type="file" accept=".txt,.vtt,.json" className="hidden" onChange={(e) => setTranscriptFile(e.target.files?.[0] ?? null)} />
+
+                            {/* Summary */}
+                            <div
+                                className={`p-4 border-2 border-dashed rounded-xl text-center cursor-pointer transition-colors ${summaryFile ? "border-emerald-500/50 bg-emerald-500/5" : "border-zinc-700 hover:border-indigo-500/50"}`}
+                                onClick={() => summaryFileRef.current?.click()}
+                            >
+                                {summaryFile ? (
+                                    <p className="text-sm text-emerald-400 flex items-center justify-center gap-2">
+                                        <CheckCircle2 className="w-4 h-4" />{summaryFile.name}
+                                    </p>
+                                ) : (
+                                    <>
+                                        <FileUp className="w-6 h-6 text-zinc-600 mx-auto mb-1" />
+                                        <p className="text-xs text-zinc-400">Summary (.txt, .json)</p>
+                                        <p className="text-[10px] text-zinc-600 mt-0.5">Click to select file</p>
+                                    </>
+                                )}
+                            </div>
+                            <input ref={summaryFileRef} type="file" accept=".txt,.json" className="hidden" onChange={(e) => setSummaryFile(e.target.files?.[0] ?? null)} />
+
+                            {/* Action Items */}
+                            <div
+                                className={`p-4 border-2 border-dashed rounded-xl text-center cursor-pointer transition-colors ${actionItemsFile ? "border-emerald-500/50 bg-emerald-500/5" : "border-zinc-700 hover:border-indigo-500/50"}`}
+                                onClick={() => actionItemsFileRef.current?.click()}
+                            >
+                                {actionItemsFile ? (
+                                    <p className="text-sm text-emerald-400 flex items-center justify-center gap-2">
+                                        <CheckCircle2 className="w-4 h-4" />{actionItemsFile.name}
+                                    </p>
+                                ) : (
+                                    <>
+                                        <FileUp className="w-6 h-6 text-zinc-600 mx-auto mb-1" />
+                                        <p className="text-xs text-zinc-400">Action Items (.txt, .json)</p>
+                                        <p className="text-[10px] text-zinc-600 mt-0.5">Click to select file</p>
+                                    </>
+                                )}
+                            </div>
+                            <input ref={actionItemsFileRef} type="file" accept=".txt,.json" className="hidden" onChange={(e) => setActionItemsFile(e.target.files?.[0] ?? null)} />
+
+                            {uploadError && (
+                                <div className="flex items-start gap-2 p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg text-sm text-rose-400">
+                                    <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                                    <span>{uploadError}</span>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     <DialogFooter>
-                        <Button variant="outline" className="border-zinc-700 text-zinc-300" onClick={() => setUploadOpen(false)}>Cancel</Button>
-                        <Button className="bg-indigo-600 hover:bg-indigo-700">Process All</Button>
+                        <Button variant="outline" className="border-zinc-700 text-zinc-300" onClick={() => { setUploadOpen(false); resetUploadState(); }}>Cancel</Button>
+                        <Button
+                            className="bg-indigo-600 hover:bg-indigo-700 gap-1.5"
+                            disabled={uploading || uploadSuccess || (!transcriptFile && !summaryFile && !actionItemsFile)}
+                            onClick={handleUploadFiles}
+                        >
+                            {uploading ? <><Loader2 className="w-4 h-4 animate-spin" />Uploading…</> : <><Upload className="w-4 h-4" />Process All</>}
+                        </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

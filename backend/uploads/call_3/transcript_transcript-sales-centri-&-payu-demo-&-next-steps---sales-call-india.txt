@@ -1,0 +1,1308 @@
+[0:04] Sanya Arora:
+hi sonia hello hi how are you hi i'm good good
+
+[0:04] Sanya Arora:
+how are you his name is sorry you won't know
+
+[0:04] Sanya Arora:
+that yeah he's got like three names yeah
+
+[0:21] Ishtiaq Tonse:
+so what's his name sai yeah oh okay okay
+
+[0:25] Lakkaraju Anurag:
+but the name yeah yeah yeah we are aware no no we're aware so it is because the hr doesn't like me
+
+[0:34] Sanya Arora:
+there's something else I want to say
+
+[0:34] Sanya Arora:
+but I won't because transcription Swati is joining us yes she's also joining
+
+[0:34] Sanya Arora:
+so Sai from my team works directly with the startups on acquisition
+
+[0:34] Sanya Arora:
+and farming both and Swati leads content and community for us so guys Ishtiaq has been leading the effort of
+
+[0:34] Sanya Arora:
+improving our acquisition in the startup space
+
+[0:34] Sanya Arora:
+and improving our distribution the first step like
+
+[1:08] Sanya Arora:
+while these guys can do a lot right from I think database to managing our reach outs the first step
+
+[1:08] Sanya Arora:
+that we discussed and decided to go ahead with is
+
+[1:08] Sanya Arora:
+that let's just get a database in place because that's the one thing that we sort of are scouring around for at any given point of time
+
+[1:08] Sanya Arora:
+So I think Ishtiaq, over to you to sort of show you what you built and how it looks.
+
+[1:32] Sanya Arora:
+Guys, please chime in, however you team prefer.
+
+[1:34] Swati  Pant:
+Yeah.
+
+[1:36] Ishtiaq Tonse:
+Let me just share my screen.
+
+[1:36] Ishtiaq Tonse:
+Okay, so can you see my screen?
+
+[1:45] Lakkaraju Anurag:
+Should be visible now, right?
+
+[1:45] Lakkaraju Anurag:
+Not yet.
+
+[1:45] Lakkaraju Anurag:
+Also, I'm like in a car, but I can see on the phone.
+
+[1:54] Ishtiaq Tonse:
+Okay.
+
+[1:54] Ishtiaq Tonse:
+Okay.
+
+[1:54] Ishtiaq Tonse:
+Let me know if you guys are able to see, and we can start here.
+
+[1:54] Ishtiaq Tonse:
+Just start with the output first as to what level of data we can go to.
+
+[1:54] Ishtiaq Tonse:
+And then I'll tell you how this is arrived at, right?
+
+[1:54] Ishtiaq Tonse:
+So that you get a flavor.
+
+[1:54] Ishtiaq Tonse:
+So we started with a startup, 1,80,000 were there, but we were able to identify about 1,14,000.
+
+[1:54] Ishtiaq Tonse:
+Then we got an exclusion list from PayU of about 14,000.
+
+[2:16] Ishtiaq Tonse:
+So we have a base of 1,03,000.
+
+[2:16] Ishtiaq Tonse:
+So what we've done specifically from PayU standpoint is we've gone through these websites using AI.
+
+[2:16] Ishtiaq Tonse:
+and built a AI model to understand
+
+[2:16] Ishtiaq Tonse:
+whether these websites have a payment gateway,
+
+[2:16] Ishtiaq Tonse:
+do they have a website in first place
+
+[2:16] Ishtiaq Tonse:
+and is it active and what kind of business are they into,
+
+[2:16] Ishtiaq Tonse:
+is it a digital product, do they have a cart available or not, and do they
+
+[2:40] Ishtiaq Tonse:
+have a payment gateway and if they have, then who are they using currently?
+
+[2:40] Ishtiaq Tonse:
+Then we try to bucket it by saying
+
+[2:40] Ishtiaq Tonse:
+that is it good potential client or maybe very high.
+
+[2:40] Ishtiaq Tonse:
+So for example, in some cases, they have a card,
+
+[2:40] Ishtiaq Tonse:
+but they don't have a payment gateway integrated.
+
+[2:40] Ishtiaq Tonse:
+So we call that as very high.
+
+[2:40] Ishtiaq Tonse:
+So then we try to give all the information
+
+[3:02] Ishtiaq Tonse:
+that is required, including direct lines of decision makers, founders and all of that.
+
+[3:02] Ishtiaq Tonse:
+If I could ask someone, all of you to mute, I'm getting a little bit of background noise.
+
+[3:02] Ishtiaq Tonse:
+Good, thank you.
+
+[3:02] Ishtiaq Tonse:
+so then you have the authorized capital all the
+
+[3:02] Ishtiaq Tonse:
+what stage are they at have they got funded
+
+[3:02] Ishtiaq Tonse:
+what is the level of funding they've got number of employees size
+
+[3:28] Ishtiaq Tonse:
+so basically all the slices that you can uh prioritize your outreach right
+
+[3:28] Ishtiaq Tonse:
+so this is a sample of the output but we have email ids for all right business email ids yes you have personal you have business
+
+[3:28] Ishtiaq Tonse:
+Uh, so this is what we had started off with what, uh, blank right now.
+
+[3:47] Sanya Arora:
+Yeah.
+
+[3:48] Ishtiaq Tonse:
+I'm not sure if this is, yeah, this is one of, uh, so initially the project was phone focused.
+
+[3:48] Ishtiaq Tonse:
+Hence we focused on the phone numbers,
+
+[3:48] Ishtiaq Tonse:
+direct lines, and I think they did a reach out
+
+[3:48] Ishtiaq Tonse:
+and they realized that these decision makers don't prefer a direct phone and they want to business, uh, email reach out.
+
+[4:06] Sanya Arora:
+Okay.
+
+[4:06] Sanya Arora:
+Yeah.
+
+[4:06] Sanya Arora:
+No, I think that was a part of our feedback also
+
+[4:06] Sanya Arora:
+that we need to have business email IDs because,
+
+[4:06] Sanya Arora:
+I mean, it's a little spammy of Payo to just do reach outs via call or WhatsApp.
+
+[4:06] Sanya Arora:
+So that will end up impacting our brand.
+
+[4:06] Sanya Arora:
+So I hope we have about email IDs.
+
+[4:06] Sanya Arora:
+I mean, if you can just sort of help me understand the base,
+
+[4:06] Sanya Arora:
+like, you know, the coverage here, you mentioned 1.14%
+
+[4:06] Sanya Arora:
+Black startups, correct?
+
+[4:33] Ishtiaq Tonse:
+Yes, yes, yes.
+
+[4:34] Sanya Arora:
+Now, in that, roughly how many are B2B as per this data and B2C?
+
+[4:34] Sanya Arora:
+And what percentage do we have business email IDs for?
+
+[4:44] Ishtiaq Tonse:
+Business email IDs, we can get it over 90%.
+
+[4:44] Ishtiaq Tonse:
+Okay.
+
+[4:44] Ishtiaq Tonse:
+B2B, B2C, I don't have the number, but I have the file ready.
+
+[4:44] Ishtiaq Tonse:
+I can give it to you, post the call.
+
+[4:44] Ishtiaq Tonse:
+I just have to do some slices.
+
+[4:54] Sanya Arora:
+So if you can just take a look at your end,
+
+[4:54] Sanya Arora:
+because I know the payment, et cetera, is yet to go through.
+
+[4:54] Sanya Arora:
+So if you can just take a look at your end
+
+[4:54] Sanya Arora:
+and just help me understand like a ballpark, you know, B2B kitna and B2C kitna in this.
+
+[5:05] Ishtiaq Tonse:
+Absolutely.
+
+[5:06] Sanya Arora:
+That just helps us get like a decent sense.
+
+[5:06] Sanya Arora:
+Yeah, absolutely.
+
+[5:09] Ishtiaq Tonse:
+So I just trying to show what we've done
+
+[5:09] Ishtiaq Tonse:
+so far and where do we stand so that you can guide me as to which direction we have to take.
+
+[5:09] Ishtiaq Tonse:
+This was more to do with the phone effort
+
+[5:09] Ishtiaq Tonse:
+and I think the calls happened and the feedback came in.
+
+[5:09] Ishtiaq Tonse:
+Let me show you what Sales Sentry does so that you can get a flavor of it.
+
+[5:09] Ishtiaq Tonse:
+So this is our website.
+
+[5:09] Ishtiaq Tonse:
+Okay.
+
+[5:09] Ishtiaq Tonse:
+So let's say you're PayU.
+
+[5:29] Ishtiaq Tonse:
+And so you can start off from scratch here with anyone
+
+[5:29] Ishtiaq Tonse:
+who doesn't understand the business also can use our product.
+
+[5:29] Ishtiaq Tonse:
+So let's say PayU.in it is.
+
+[5:29] Ishtiaq Tonse:
+And you want to start off to identify leads here.
+
+[5:29] Ishtiaq Tonse:
+So you can just put your website
+
+[5:29] Ishtiaq Tonse:
+and it automatically goes through multiple AI models
+
+[5:29] Ishtiaq Tonse:
+and aggregates and understand what you guys do, all right?
+
+[5:29] Ishtiaq Tonse:
+And automatically looks at generating leads, all right?
+
+[5:58] Ishtiaq Tonse:
+So one of the portion is what I showed you,
+
+[5:58] Ishtiaq Tonse:
+but I'm just trying to showcase as to how we can leverage sales entry.
+
+[5:58] Ishtiaq Tonse:
+So let's say you're into e-commerce product,
+
+[5:58] Ishtiaq Tonse:
+for example, and then let's say you wanna do outreach on email and you want us to provide a LMS.
+
+[5:58] Ishtiaq Tonse:
+I'm just taking assumptions.
+
+[5:58] Ishtiaq Tonse:
+So in a few seconds, it will go
+
+[5:58] Ishtiaq Tonse:
+through all your digital presence
+
+[5:58] Ishtiaq Tonse:
+across and then understand what you exactly do,
+
+[6:21] Ishtiaq Tonse:
+identify your ICPs, that is the ideal customer profile, and give you prospective customers to who you can do outreach.
+
+[6:21] Ishtiaq Tonse:
+Okay, and it's all done in a couple of seconds.
+
+[6:21] Ishtiaq Tonse:
+So this is what it is.
+
+[6:21] Ishtiaq Tonse:
+So here it tells you what PayU is about.
+
+[6:21] Ishtiaq Tonse:
+What is your revenue size currently at the 2015, at 2025?
+
+[6:21] Ishtiaq Tonse:
+What's your employee size?
+
+[6:21] Ishtiaq Tonse:
+And what are the target industry?
+
+[6:21] Ishtiaq Tonse:
+Let me just expand, increase the size so that you can.
+
+[6:51] Ishtiaq Tonse:
+Right, then growth expansion, what is your focus?
+
+[6:51] Ishtiaq Tonse:
+Who are your competitions?
+
+[6:51] Ishtiaq Tonse:
+What is your target audience?
+
+[6:51] Ishtiaq Tonse:
+You can edit it if you think the AI has not done a great job.
+
+[6:51] Ishtiaq Tonse:
+Then you click on generate prospect.
+
+[6:51] Ishtiaq Tonse:
+So this will automatically go through the entire
+
+[6:51] Ishtiaq Tonse:
+database of 390 million that you have
+
+[6:51] Ishtiaq Tonse:
+and identify people that can buy your services away from the DPIT and the starter space as well.
+
+[7:17] Ishtiaq Tonse:
+So MSMEs and any other business that you want to target as well.
+
+[7:17] Ishtiaq Tonse:
+So it will take about two minutes
+
+[7:17] Ishtiaq Tonse:
+because it has to do a lot of algorithms and searches and then it will come back.
+
+[7:17] Ishtiaq Tonse:
+And that we have multiple models
+
+[7:17] Ishtiaq Tonse:
+as well here, which are preferred, like
+
+[7:17] Ishtiaq Tonse:
+for each industry, we have different types of built-in systems
+
+[7:17] Ishtiaq Tonse:
+where they can just start off from the journey and we have different personas.
+
+[7:45] Ishtiaq Tonse:
+So founders, CEOs, everyone can start from there.
+
+[7:45] Ishtiaq Tonse:
+While this fetches the details,
+
+[7:45] Ishtiaq Tonse:
+and so you can look at it, it's got the details now.
+
+[7:45] Ishtiaq Tonse:
+It tells you who are the people that you need to reach out and you can specify
+
+[7:45] Ishtiaq Tonse:
+details so what do they do what is their use case
+
+[7:45] Ishtiaq Tonse:
+what is the employee size what's the revenue size
+
+[7:45] Ishtiaq Tonse:
+where are they based who is the key decision maker founder
+
+[8:07] Ishtiaq Tonse:
+what are the pain points and how do you need to approach them how is it scanning for the pain points this will go through the entire website
+
+[8:07] Ishtiaq Tonse:
+uh it will look at all digital footprints
+
+[8:07] Ishtiaq Tonse:
+if it gets in the news or any kind of platform they've actually requested
+
+[8:07] Ishtiaq Tonse:
+for codes or details it goes and takes
+
+[8:28] Ishtiaq Tonse:
+that and puts it together so there's about 1000 to 2000 plus they we have access to intent capture tools as well so it will do uh
+
+[8:28] Ishtiaq Tonse:
+multiple intent capture tools and give this information in a summary.
+
+[8:28] Ishtiaq Tonse:
+So if you like this, you can just download
+
+[8:28] Ishtiaq Tonse:
+that as an Excel or a PDF here and then keep it as this else.
+
+[8:28] Ishtiaq Tonse:
+If you want to go to the next step,
+
+[8:28] Ishtiaq Tonse:
+there is a dashboard view which I will showcase.
+
+[8:52] Ishtiaq Tonse:
+So how we put our website is the face of the website.
+
+[8:52] Ishtiaq Tonse:
+Then you have this GPT and the elements that we talk as the heart.
+
+[8:52] Ishtiaq Tonse:
+So a salesperson can discuss their problem and the AI itself will solve the problem.
+
+[8:52] Ishtiaq Tonse:
+So they don't have to be experienced and
+
+[8:52] Ishtiaq Tonse:
+have any skills.
+
+[8:52] Ishtiaq Tonse:
+So even an intern can use this tool
+
+[8:52] Ishtiaq Tonse:
+and generate leads for any business and any industry.
+
+[9:17] Ishtiaq Tonse:
+So then you can click on the dashboard and it will take you to the screen.
+
+[9:17] Ishtiaq Tonse:
+Before I go there, I'll just want to give other flavors of the tech that we have available so that you understand.
+
+[9:17] Ishtiaq Tonse:
+We have multiple modes in this particular website,
+
+[9:17] Ishtiaq Tonse:
+wherein you have discover mode
+
+[9:17] Ishtiaq Tonse:
+where people can chat and understand what you do with ChatGPTA or Puppet Facility.
+
+[9:17] Ishtiaq Tonse:
+Lightning mode is just put your website,
+
+[9:41] Ishtiaq Tonse:
+it will automatically start generating leads for you.
+
+[9:41] Ishtiaq Tonse:
+Focus mode is for people who really want to target niche segments wherein it will ask multiple questions and then you go into that.
+
+[9:41] Ishtiaq Tonse:
+Then we have research mode where it does deep research about a company or multiple companies.
+
+[9:41] Ishtiaq Tonse:
+Then we have multi-GPT mode, and Web Intel is
+
+[9:41] Ishtiaq Tonse:
+what I've been doing for you guys, wherein I put the website list
+
+[10:01] Ishtiaq Tonse:
+and it will automatically go and scrape those websites and get us the data.
+
+[10:01] Ishtiaq Tonse:
+Multi-GPT is mostly like a lot of our clients are saying that, hey, I use that GPT, I like this, I like that.
+
+[10:01] Ishtiaq Tonse:
+What we've done is here, you can have a starting point
+
+[10:01] Ishtiaq Tonse:
+where you select what you want to do, and then you can select multiple AI models.
+
+[10:01] Ishtiaq Tonse:
+to start your journey.
+
+[10:01] Ishtiaq Tonse:
+So here you can go enter the topic
+
+[10:26] Ishtiaq Tonse:
+that you need to search, the client website
+
+[10:26] Ishtiaq Tonse:
+and your website, and it'll automatically get you the output from all the LLMs.
+
+[10:26] Ishtiaq Tonse:
+Okay, so these are all the starting, these are all the starting points, all right?
+
+[10:39] Sanya Arora:
+No, this is great actually, yeah.
+
+[10:42] Ishtiaq Tonse:
+So this speeds up the entire journey.
+
+[10:42] Ishtiaq Tonse:
+So then there are demos for each of the modes that we have as to how you need to utilize it.
+
+[10:42] Ishtiaq Tonse:
+So there's a demo page, there are resources available.
+
+[10:42] Ishtiaq Tonse:
+and multiple things that we also are doing something
+
+[10:42] Ishtiaq Tonse:
+for the startup programs with the DPI IT and even government of Karnataka.
+
+[10:42] Ishtiaq Tonse:
+So there's certain things that we're working on.
+
+[11:01] Ishtiaq Tonse:
+So after all of this, this is the starting point.
+
+[11:01] Ishtiaq Tonse:
+And then once you say that you wanna view
+
+[11:01] Ishtiaq Tonse:
+that and go live with it, it will come to this dashboard where it will create the list for you.
+
+[11:01] Ishtiaq Tonse:
+Okay, and then you can view that list.
+
+[11:01] Ishtiaq Tonse:
+For example, so the GPT has created
+
+[11:01] Ishtiaq Tonse:
+that list for you, and you can see all the people that it is identified as your niche, or you have to reach out.
+
+[11:28] Ishtiaq Tonse:
+So let's say you want to reveal the email,
+
+[11:28] Ishtiaq Tonse:
+you just click on this and it will reveal the email.
+
+[11:28] Ishtiaq Tonse:
+business email, okay?
+
+[11:28] Ishtiaq Tonse:
+Then in case you feel that, okay, it has not given us the detail
+
+[11:28] Ishtiaq Tonse:
+that we want, the GPT has not done this work, or the AI has not done it, you can do a customization.
+
+[11:28] Ishtiaq Tonse:
+You can go and even go to the database, identify the details and shortlist it.
+
+[11:28] Ishtiaq Tonse:
+And then it does fitment score.
+
+[11:55] Ishtiaq Tonse:
+So basically for PayU, it will start doing a fitment.
+
+[11:55] Ishtiaq Tonse:
+So I have to just update the website here.
+
+[11:55] Ishtiaq Tonse:
+so let's say pay you dot in so it will see
+
+[11:55] Ishtiaq Tonse:
+if your product will fit this identified audience using ai
+
+[11:55] Ishtiaq Tonse:
+so first gpt does the fitment then you can customize it
+
+[11:55] Ishtiaq Tonse:
+if you think the gpt has not done its work then it will do a fitment basis this
+
+[11:55] Ishtiaq Tonse:
+so it will go to everyone's website
+
+[12:18] Ishtiaq Tonse:
+that you identified and understand whether your product fits them or not and then it will
+
+[12:18] Ishtiaq Tonse:
+come up and give you a score as to what is the fitment score
+
+[12:18] Ishtiaq Tonse:
+Okay, and you can do deep research here
+
+[12:29] Sanya Arora:
+for each of them, and then you have a preview mode
+
+[12:33] Ishtiaq Tonse:
+where you'll have all the details of those resources, and then it automatically creates 5 starting pitches for you.
+
+[12:33] Ishtiaq Tonse:
+It identifies the time zones.
+
+[12:33] Ishtiaq Tonse:
+And then creates a follow ups as well.
+
+[12:33] Ishtiaq Tonse:
+You can time it as well as you want to make it less automated.
+
+[12:33] Ishtiaq Tonse:
+You can have the human email thread also
+
+[12:33] Ishtiaq Tonse:
+and then you have a research file which I'll show you a sample of.
+
+[12:33] Ishtiaq Tonse:
+So it will automatically identify people,
+
+[13:06] Ishtiaq Tonse:
+the product and the services that you can position.
+
+[13:06] Ishtiaq Tonse:
+So I'm giving an example of a manufacturing company here.
+
+[13:06] Ishtiaq Tonse:
+So here it basically the product, it is given the list of companies.
+
+[13:06] Ishtiaq Tonse:
+This company wants to expand in the US.
+
+[13:06] Ishtiaq Tonse:
+So it's identified people who will buy and what product would they be interested in.
+
+[13:06] Ishtiaq Tonse:
+And it gives you access to that.
+
+[13:06] Ishtiaq Tonse:
+And we can provide the email address
+
+[13:29] Ishtiaq Tonse:
+and phone numbers or by use case how we can use this particular product.
+
+[13:35] Sanya Arora:
+So where do you get the email number and phone numbers from?
+
+[13:38] Ishtiaq Tonse:
+Sorry, just a few dollars.
+
+[13:38] Ishtiaq Tonse:
+Yeah.
+
+[13:38] Ishtiaq Tonse:
+So we have our own database, which is about 390 million.
+
+[13:38] Ishtiaq Tonse:
+Okay and we also are partners with large companies in India as well as outside.
+
+[13:38] Ishtiaq Tonse:
+So a lot of aggregation happens, public sources also we pull information from.
+
+[13:38] Ishtiaq Tonse:
+So companies like Apollo, Zoom
+
+[13:38] Ishtiaq Tonse:
+and all of those is also that something we can leverage.
+
+[13:38] Ishtiaq Tonse:
+And for India we have different partners.
+
+[14:10] Ishtiaq Tonse:
+So how do I position it is you have a single subscription, all in one solution in one place.
+
+[14:10] Ishtiaq Tonse:
+You don't have to go pick up subscription with Zoom, pick up subscription with someone else.
+
+[14:10] Ishtiaq Tonse:
+You come to us, we will be able to aggregate all the data available
+
+[14:10] Ishtiaq Tonse:
+across the globe using AI and LLMs as well as data based companies to get you what you need.
+
+[14:28] Sanya Arora:
+So you incur a cost if let's say you end up consuming Zoom enforced proprietary data?
+
+[14:35] Ishtiaq Tonse:
+Do we end up incurring cost?
+
+[14:37] Sanya Arora:
+Yeah.
+
+[14:37] Sanya Arora:
+No, do you?
+
+[14:37] Sanya Arora:
+And how does the pricing of this work?
+
+[14:37] Sanya Arora:
+Like, are we paying for the platform?
+
+[14:37] Sanya Arora:
+Do we pay for, I mean, barring the one-time activity
+
+[14:37] Sanya Arora:
+that we've done, but especially interested in the platform, let's say, right?
+
+[14:37] Sanya Arora:
+Because it has both the audience also and the reach out also.
+
+[14:37] Sanya Arora:
+So how does the pricing of it work?
+
+[14:56] Ishtiaq Tonse:
+See, currently, with PayU, we are at a starting point considering the relationships.
+
+[14:56] Ishtiaq Tonse:
+So as of now, subscription, what we can do is we can go into a custom model.
+
+[14:56] Ishtiaq Tonse:
+to a POC, and then we can decide as to how much it will incur.
+
+[14:56] Ishtiaq Tonse:
+So we can look at that model.
+
+[15:14] Sanya Arora:
+Sure, I think that sounds fantastic.
+
+[15:17] Ishtiaq Tonse:
+Yeah, so what we had discussed is these models wherein we start off with, let me just see.
+
+[15:17] Ishtiaq Tonse:
+Okay, so we decided to go ahead with the data part.
+
+[15:17] Ishtiaq Tonse:
+Then I think gradually we'll go into the campaigns.
+
+[15:17] Ishtiaq Tonse:
+Yeah, data is first because...
+
+[15:17] Ishtiaq Tonse:
+then lead generation, then outreach campaigns
+
+[15:17] Ishtiaq Tonse:
+and then appointment setting is what we had decided for.
+
+[15:39] Sanya Arora:
+So I think no, this is I think fantastic.
+
+[15:39] Sanya Arora:
+What we I think would be the most eager to see also is
+
+[15:39] Sanya Arora:
+so let me know before that Swati, Sai, do you have any questions?
+
+[15:50] Ishtiaq Tonse:
+So let me do one thing.
+
+[15:50] Ishtiaq Tonse:
+Let me just showcase how we can use this.
+
+[15:53] Sanya Arora:
+Okay.
+
+[15:53] Ishtiaq Tonse:
+So there's an AI here.
+
+[15:53] Ishtiaq Tonse:
+This is an agent API.
+
+[15:53] Ishtiaq Tonse:
+So you can just add the, let's say DPI TKL, you want to do this.
+
+[15:53] Ishtiaq Tonse:
+So you just go ahead and just pick up a, let me do a test of 25.
+
+[15:53] Ishtiaq Tonse:
+So you just enter this and click on upload.
+
+[15:53] Ishtiaq Tonse:
+So it can, it is like, it's not only dependent on that.
+
+[15:53] Ishtiaq Tonse:
+That's the reason I wanted to show a demo so that you are able to relate.
+
+[16:13] Ishtiaq Tonse:
+So once you do this and you just have to go back and tell that, okay, give me,
+
+[16:13] Ishtiaq Tonse:
+These titles from India, for example.
+
+[16:13] Ishtiaq Tonse:
+And you just paste it here.
+
+[16:13] Ishtiaq Tonse:
+And it will automatically identify those people for you.
+
+[16:13] Ishtiaq Tonse:
+And then you can download the list automatically.
+
+[16:29] Sanya Arora:
+Which is the same Excel that you've created.
+
+[16:29] Sanya Arora:
+Technically, it's an export from here.
+
+[16:33] Ishtiaq Tonse:
+Yes.
+
+[16:33] Ishtiaq Tonse:
+Yes.
+
+[16:34] Sanya Arora:
+Got it.
+
+[16:35] Ishtiaq Tonse:
+Got it.
+
+[16:35] Ishtiaq Tonse:
+But here it is dynamic.
+
+[16:35] Ishtiaq Tonse:
+So you can, if you want to expand globally also, you can do that.
+
+[16:35] Ishtiaq Tonse:
+We can play around with it.
+
+[16:35] Ishtiaq Tonse:
+Yeah.
+
+[16:35] Ishtiaq Tonse:
+You can play around with that.
+
+[16:35] Ishtiaq Tonse:
+So here, for example, this is given it.
+
+[16:35] Ishtiaq Tonse:
+In case you want some additional columns
+
+[16:35] Ishtiaq Tonse:
+or you want to move it around, you have that option.
+
+[16:50] Sanya Arora:
+Yeah, the exclusion list and everything.
+
+[16:50] Sanya Arora:
+So we do all.
+
+[16:52] Ishtiaq Tonse:
+Yeah.
+
+[16:53] Sanya Arora:
+We do our entire bit.
+
+[16:53] Sanya Arora:
+No, this seems exciting, Swati.
+
+[16:53] Sanya Arora:
+Sai, any questions?
+
+[17:00] Lakkaraju Anurag:
+OK, I can go first.
+
+[17:00] Lakkaraju Anurag:
+One question I had is, with
+
+[17:00] Lakkaraju Anurag:
+regard to like you're saying when we use your platforms
+
+[17:00] Lakkaraju Anurag:
+and i just want to point out actually not a query uh
+
+[17:00] Lakkaraju Anurag:
+if we are supposed to use it then we have to kind of get it whitelisted also
+
+[17:00] Lakkaraju Anurag:
+because it's it's a gpt this thing right is it based yeah oh yeah yeah no no so so that's why uh for what we do for enterprises uh sites
+
+[17:33] Ishtiaq Tonse:
+We do a backend operations for them.
+
+[17:33] Ishtiaq Tonse:
+So what we do is you just have to give us the list of people
+
+[17:33] Ishtiaq Tonse:
+that you want to reach out to, like the criteria, like how Sanya and team gave.
+
+[17:33] Ishtiaq Tonse:
+I have a team that can, in the backend, execute it and give you reports on that.
+
+[17:33] Ishtiaq Tonse:
+So that should not be a problem.
+
+[17:33] Ishtiaq Tonse:
+So for example, even if you want to do an email campaign,
+
+[17:33] Ishtiaq Tonse:
+you just have to give me the pitch
+
+[17:54] Ishtiaq Tonse:
+that you want us to use and the content,
+
+[17:54] Ishtiaq Tonse:
+the subject that you want to do and what is the timing that you want me to schedule these at.
+
+[17:54] Ishtiaq Tonse:
+So those campaigns will happen
+
+[17:54] Ishtiaq Tonse:
+and the leads will get forwarded either to your CRM or email ID that you choose.
+
+[17:54] Ishtiaq Tonse:
+So enterprise, we do a complete handholding in the backend.
+
+[18:13] Lakkaraju Anurag:
+Okay, perfect.
+
+[18:13] Lakkaraju Anurag:
+Yeah, that's what I wanted to check.
+
+[18:13] Lakkaraju Anurag:
+Okay.
+
+[18:18] Ishtiaq Tonse:
+So this is the list that we created and you can just extract it.
+
+[18:18] Ishtiaq Tonse:
+If you want to get go more, you can extract more contacts or you can download the CSV.
+
+[18:28] Sanya Arora:
+Sure, I got it.
+
+[18:28] Sanya Arora:
+I think just, I know this is very exciting.
+
+[18:28] Sanya Arora:
+And I'm sure we can figure out more things as we go.
+
+[18:28] Sanya Arora:
+I think very keen to see the kind of coverage,
+
+[18:28] Sanya Arora:
+because data is paramount for us right now, right?
+
+[18:28] Sanya Arora:
+And that's where your expertise also comes in.
+
+[18:28] Sanya Arora:
+So I think very excited to see the full version.
+
+[18:28] Sanya Arora:
+That said, on the next step, Srishtya, we discussed that.
+
+[18:28] Sanya Arora:
+What is the legal advice on this?
+
+[18:53] Sanya Arora:
+Can you come on board as a vendor?
+
+[18:53] Sanya Arora:
+Or does it have to be a partnership contract?
+
+[18:58] Ishtiaq Tonse:
+What I understood from Margo is we'll have to be a sales consultant is what I could understand.
+
+[18:58] Ishtiaq Tonse:
+And we come on board as sales consultant to help you grow the startup space.
+
+[18:58] Ishtiaq Tonse:
+And then maybe the MSME, the hotel, whatever space it is.
+
+[18:58] Ishtiaq Tonse:
+I don't know.
+
+[18:58] Ishtiaq Tonse:
+So that's what I could understand.
+
+[19:13] Sanya Arora:
+Okay, let me figure this piece out on priority because I think we get held up until that's figured out.
+
+[19:13] Sanya Arora:
+So let me, I'm in fact catching up with him at four.
+
+[19:13] Sanya Arora:
+So let me figure this piece out
+
+[19:13] Sanya Arora:
+and tell you, I think that is the first blocker I want to remove.
+
+[19:13] Sanya Arora:
+Like while everything is exciting, I want to remove the legal piece out of the way
+
+[19:30] Sanya Arora:
+so that we can get started and we can start actually exploring the phenomenal database that you've created and you've accumulated.
+
+[19:30] Sanya Arora:
+and we'll also see how it goes right
+
+[19:30] Sanya Arora:
+because I mean yeah I mean super excited
+
+[19:30] Sanya Arora:
+for this and especially because it's a queryable database at your end at the end of the day you know
+
+[19:30] Sanya Arora:
+what I would love to spend some time on is just launching maybe small small
+
+[19:54] Sanya Arora:
+campaigns within the entire base so that we also understand it if we have any feedback we can pass it on real time to you
+
+[19:54] Sanya Arora:
+so that is then an active channel
+
+[19:54] Sanya Arora:
+that we can set up and then we can go to the phase two three four five of the partnership sequentially
+
+[20:09] Ishtiaq Tonse:
+so something else that i've not showcased to you
+
+[20:09] Ishtiaq Tonse:
+but we do with for us australia
+
+[20:09] Ishtiaq Tonse:
+and uk is uh we have something called agent ki
+
+[20:09] Ishtiaq Tonse:
+so let's assume that you want to automate
+
+[20:09] Ishtiaq Tonse:
+after the lead gets generated so we have a ai which automatically categorizes basically the person who's responded the intent on the email
+
+[20:09] Ishtiaq Tonse:
+Then we also categorize the company type
+
+[20:30] Ishtiaq Tonse:
+and give a company score, and then we have a contact score.
+
+[20:30] Ishtiaq Tonse:
+So let's say you from PayU response to the email,
+
+[20:30] Ishtiaq Tonse:
+your score might come up cumulative at 80% for lead score.
+
+[20:30] Ishtiaq Tonse:
+And then basis the gender and the region,
+
+[20:30] Ishtiaq Tonse:
+we have an AI which will automatically talk and book an appointment or even do a sales.
+
+[20:30] Ishtiaq Tonse:
+So that is also a feature available.
+
+[20:30] Ishtiaq Tonse:
+We've not been able to get the Indian accent right as of yet,
+
+[20:56] Ishtiaq Tonse:
+Okay, so it's a little robotic,
+
+[20:56] Ishtiaq Tonse:
+but we can do the full end-to-end closure journey also in case you guys want to go to the appointment generation or appointment setting as well.
+
+[20:56] Ishtiaq Tonse:
+So within the year, we'll automatically do the calls,
+
+[20:56] Ishtiaq Tonse:
+schedule a call, and then you can give us Calendly
+
+[20:56] Ishtiaq Tonse:
+or Microsoft Bookings, and it'll identify your booking slot and schedule the call as well.
+
+[20:56] Ishtiaq Tonse:
+You're on mute, you're on mute.
+
+[21:26] Sanya Arora:
+Got it.
+
+[21:26] Sanya Arora:
+No, I think the agentic piece is exciting.
+
+[21:26] Sanya Arora:
+The fact that we can sort of create our own drip in your drip email
+
+[21:26] Sanya Arora:
+campaign journey in your platform and then send it out, even that's very exciting.
+
+[21:26] Sanya Arora:
+And that's what unlocks the value for us a lot.
+
+[21:26] Sanya Arora:
+You know, I mean, how I see this potentially getting used is every salesperson in the team can create their own list
+
+[21:46] Sanya Arora:
+and create their own email drip journey that they want to create and they can.
+
+[21:46] Sanya Arora:
+go crazy with that no so i think it's it's definitely it's great
+
+[21:46] Sanya Arora:
+but i think the one thing i from an actionable point of view i don't know
+
+[21:46] Sanya Arora:
+what was the legal piece so let me sort
+
+[21:46] Sanya Arora:
+that around four i'll have an update
+
+[21:46] Sanya Arora:
+for you by end of day so we can actually get this started we can start playing around with the data
+
+[22:04] Sanya Arora:
+that you have and then we can strengthen this partnership
+
+[22:06] Ishtiaq Tonse:
+as we go forward yeah and like you mentioned that the gpt and all those axes
+
+[22:06] Ishtiaq Tonse:
+are complicated right so i think my my recommendation is just as a data point is
+
+[22:06] Ishtiaq Tonse:
+position us as more of a technology and AI partner.
+
+[22:37] Sanya Arora:
+I just have a few questions for you.
+
+[22:37] Sanya Arora:
+In fact, as I do more research into the DPIT piece, I might just hit you up with some more insights.
+
+[22:37] Sanya Arora:
+But no, don't worry.
+
+[22:37] Sanya Arora:
+We'll be bringing you on board
+
+[22:37] Sanya Arora:
+as sales partners or sales consultants with us, and I'll manage that piece.
+
+[22:50] Ishtiaq Tonse:
+Yeah.
+
+[22:50] Ishtiaq Tonse:
+Cool, cool.
+
+[22:50] Ishtiaq Tonse:
+Any questions you have for me?
+
+[22:53] Sanya Arora:
+No, this sounds fantastic.
+
+[22:55] Ishtiaq Tonse:
+Excited to see what you have.
+
+[22:56] Lakkaraju Anurag:
+I was going to be like, if you are also catering to startups, would you also require a payment gateway?
+
+[22:56] Lakkaraju Anurag:
+That's what I was going to ask.
+
+[23:05] Ishtiaq Tonse:
+So we already are your client
+
+[23:05] Ishtiaq Tonse:
+for quite some time and yeah, we already work with you and we work with the Stripe.
+
+[23:05] Ishtiaq Tonse:
+We work with the BriskPay, one of your partner firm as well.
+
+[23:19] Sanya Arora:
+Yeah.
+
+[23:20] Ishtiaq Tonse:
+Yeah.
+
+[23:20] Ishtiaq Tonse:
+So we were all already good.
+
+[23:20] Ishtiaq Tonse:
+You're a sales guy.
+
+[23:25] Sanya Arora:
+Cool.
+
+[23:27] Ishtiaq Tonse:
+All right.
+
+[23:27] Ishtiaq Tonse:
+Any other questions you guys had?
+
+[23:32] Swati  Pant:
+i just want to have a link of the platform to play around like
+
+[23:36] Ishtiaq Tonse:
+if that is possible sure sure it's sales sentry sales
+
+[23:40] Swati  Pant:
+and the center right sentry.com yeah i was actually i think in my laptop it is
+
+[23:45] Lakkaraju Anurag:
+not opening i'll try somewhere else no it's because of this only it's because it's
+
+[23:55] Swati  Pant:
+No, it's not opening only for now.
+
+[23:57] Lakkaraju Anurag:
+I'll try on another laptop.
+
+[23:57] Lakkaraju Anurag:
+But then AI websites don't open
+
+[23:57] Lakkaraju Anurag:
+because they're like, please use our own in-house AI or whatever.
+
+[24:04] Swati  Pant:
+Because once I play around, I get a lot of questions in terms of filters,
+
+[24:04] Swati  Pant:
+what kind of filters we would need and all those things, right?
+
+[24:04] Swati  Pant:
+So then only I'll be able to give you like a feedback, list of feedback.
+
+[24:19] Ishtiaq Tonse:
+Yeah, so see, the way I would position is, Swati, we are a one-stop solution.
+
+[24:19] Ishtiaq Tonse:
+So you tell us what you need.
+
+[24:19] Ishtiaq Tonse:
+We will use all the LLMs, all the database available and get you what you need.
+
+[24:19] Ishtiaq Tonse:
+But again, you also need to understand
+
+[24:19] Ishtiaq Tonse:
+that these are very custom AI models that you have to create.
+
+[24:19] Ishtiaq Tonse:
+We've created for some of them that were already given by PayU.
+
+[24:19] Ishtiaq Tonse:
+But whatever you guys need, we can pretty much do
+
+[24:39] Ishtiaq Tonse:
+that without having the hassle of working with a development team and multiple vendors.
+
+[24:39] Ishtiaq Tonse:
+Okay.
+
+[24:39] Ishtiaq Tonse:
+Cool.
+
+[24:39] Ishtiaq Tonse:
+I've dropped the email ID, the website link anyways,
+
+[24:39] Ishtiaq Tonse:
+on the chat, as well as my email ID is last portion.
+
+[24:39] Ishtiaq Tonse:
+The domain itself is the website.
+
+[24:57] Swati  Pant:
+Yes.
+
+[24:58] Ishtiaq Tonse:
+I'll check it out.
+
+[24:59] Sanya Arora:
+Thank you.
+
+[25:01] Ishtiaq Tonse:
+Let's connect.
+
+[25:03] Swati  Pant:
+Absolutely.
+
+[25:03] Ishtiaq Tonse:
+Thanks.
+
+[25:03] Ishtiaq Tonse:
+Thanks a lot for your time.
+
+[25:03] Ishtiaq Tonse:
+Nice meeting you guys.
+
+[25:03] Ishtiaq Tonse:
+Have a wonderful day.
+
+[25:07] Swati  Pant:
+Thank you.
+
+[25:08] Sanya Arora:
+Bye.
+

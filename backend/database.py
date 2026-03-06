@@ -1,12 +1,18 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+import os
+from dotenv import load_dotenv
 
-# Defaulting to SQLite for initial development and testing Phase 1 schema
-SQLALCHEMY_DATABASE_URL = "sqlite:///./sdr_command_center.db"
+load_dotenv()
 
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
-)
+DB_HOST = os.getenv("DB_TENANT_HOST", "127.0.0.1")
+DB_USER = os.getenv("DB_TENANT_USER", "root")
+DB_PASS = os.getenv("DB_TENANT_PASS", "root")
+DB_NAME = os.getenv("DB_TENANT_NAME", "demo")
+
+SQLALCHEMY_DATABASE_URL = f"mysql+pymysql://{DB_USER}:{DB_PASS}@{DB_HOST}/{DB_NAME}"
+
+engine = create_engine(SQLALCHEMY_DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def get_db():

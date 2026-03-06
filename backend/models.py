@@ -17,15 +17,44 @@ class User(Base):
 class Lead(Base):
     __tablename__ = "leads"
     id = Column(Integer, primary_key=True, index=True)
+    # Core contact info
+    name = Column(String(255), nullable=True)           # lead person's display name
+    job_title = Column(String(255), nullable=True)
+    company = Column(String(255), nullable=True)
+    website = Column(String(500), nullable=True)
+    email = Column(String(255), index=True)
+    phone = Column(String(50), nullable=True)
+    # KYC / compliance fields
     legal_name = Column(String(255), nullable=True)
     gst_number = Column(String(50), nullable=True)
     registered_address = Column(Text, nullable=True)
     contact_person = Column(String(255), nullable=True)
-    email = Column(String(255), index=True)
-    phone = Column(String(50), nullable=True)
+    # Pipeline status
+    lead_status = Column(String(50), default="NOT CLASSIFIED")  # HOT/WARM/COLD/NOT CLASSIFIED
+    demo_status = Column(String(100), nullable=True)           # Demo Scheduled / ... / Demo Completed
+    demo_sub_status = Column(String(100), nullable=True)
+    demo_time = Column(String(255), nullable=True)             # human-readable or ISO string
+    # Meeting links
+    teams_link = Column(String(500), nullable=True)
+    bubbles_link = Column(String(500), nullable=True)
+    # Dates
+    last_contact = Column(DateTime, nullable=True)
+    follow_up_date = Column(DateTime, nullable=True)
+    # Post-call
+    call_rating = Column(Integer, default=0)
+    transcript_text = Column(Text, nullable=True)
+    summary_text = Column(Text, nullable=True)
+    action_items_text = Column(Text, nullable=True)
+    # Documents tracking (JSON arrays)
+    requested_docs = Column(JSON, nullable=True)       # e.g. ["invoice", "quotation", "non_disclosure"]
+    selected_documents = Column(JSON, nullable=True)   # human-readable: ["Invoice + Payment Link", "NDA"]
+    generated_docs = Column(JSON, nullable=True)       # doc keys that have been generated: ["invoice"]
+    generated_doc_urls = Column(JSON, nullable=True)   # {docKey: downloadUrl}
+    # Custom field values (populated from settings-defined custom fields)
+    custom_field_values = Column(JSON, nullable=True)  # {fieldName: value}
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
+
     pre_call_reports = relationship("PreCallReport", back_populates="lead")
     calls = relationship("Call", back_populates="lead")
 
@@ -60,9 +89,12 @@ class Document(Base):
     __tablename__ = "documents"
     id = Column(Integer, primary_key=True, index=True)
     call_id = Column(Integer, ForeignKey("calls.id"), nullable=True)
+    lead_id = Column(Integer, ForeignKey("leads.id"), nullable=True)
     type = Column(String(50)) # invoice, contract, quotation, sample_list, mom
+    filename = Column(String(500), nullable=True)    # stored filename (basename only)
     file_path = Column(String(500))
     pdf_path = Column(String(500), nullable=True)
+    download_url = Column(String(500), nullable=True)
     status = Column(String(50), default="generated") # generated, pending_approval, approved, rejected, sent
     payment_link = Column(String(500), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -115,3 +147,10 @@ class SDRKnowledgeBase(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Note: sdr_id foreign key ensures 1-to-1 or 1-to-many relationship with user
+
+class AppSettings(Base):
+    __tablename__ = "app_settings"
+    id = Column(Integer, primary_key=True, index=True)
+    key = Column(String(255), unique=True, nullable=False, index=True)
+    value = Column(JSON, nullable=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
