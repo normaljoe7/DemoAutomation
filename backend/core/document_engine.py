@@ -1,11 +1,64 @@
 from docx import Document
 from docxtpl import DocxTemplate
-from docx2pdf import convert
 import os
 import re
 import zipfile
 import tempfile
 import shutil
+import subprocess
+import platform
+
+
+def _convert_docx_to_pdf_libreoffice(docx_path: str, output_dir: str):
+    """
+    Convert a DOCX file to PDF using LibreOffice headless mode.
+    Returns the PDF path on success, or None if LibreOffice is not found / conversion fails.
+    """
+    candidates = []
+    if platform.system() == "Windows":
+        candidates = [
+            r"C:\Program Files\LibreOffice\program\soffice.exe",
+            r"C:\Program Files (x86)\LibreOffice\program\soffice.exe",
+            r"C:\Program Files\LibreOffice 7\program\soffice.exe",
+            r"C:\Program Files\LibreOffice 6\program\soffice.exe",
+        ]
+    else:
+        import shutil as _shutil
+        for name in ("libreoffice", "soffice"):
+            found = _shutil.which(name)
+            if found:
+                candidates.append(found)
+                break
+
+    soffice = None
+    for c in candidates:
+        if os.path.isabs(c):
+            if os.path.exists(c):
+                soffice = c
+                break
+        else:
+            soffice = c
+            break
+
+    if not soffice:
+        return None
+
+    try:
+        result = subprocess.run(
+            [soffice, "--headless", "--convert-to", "pdf", docx_path, "--outdir", output_dir],
+            timeout=120,
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode == 0:
+            base = os.path.splitext(os.path.basename(docx_path))[0]
+            pdf_path = os.path.join(output_dir, base + ".pdf")
+            if os.path.exists(pdf_path):
+                return pdf_path
+    except Exception:
+        pass
+
+    return None
 
 class DocumentEngine:
     def __init__(self):
@@ -116,53 +169,46 @@ class DocumentEngine:
             
             pdf_path = None
             error_msg = None
-            
-            if convert_pdf:
-                # docx2pdf requires absolute paths on Windows
-                abs_output_path = os.path.abspath(output_path)
-                pdf_target = abs_output_path.replace(".docx", ".pdf")
-                
-                import sys
-                import io
-                
-                # Save original streams
-                original_stdout = sys.stdout
-                original_stderr = sys.stderr
-                
-                try:
-                    # Initialize COM for safety in GUI threads
-                    try:
-                        import pythoncom
-                        pythoncom.CoInitialize()
-                    except:
-                        pass # standard pythoncom import might fail if not installed, but docx2pdf needs it. 
-                             # If docx2pdf is installed, pywin32 is too.
 
-                    # Redirect streams to silence tqdm and avoid GUI crashes
-                    # We use a dummy stream instead of devnull file to avoid "closed file" issues
-                    # if we restore it late.
-                    dummy_stream = io.StringIO()
-                    
-                    sys.stdout = dummy_stream
-                    sys.stderr = dummy_stream
-                        
-                    convert(abs_output_path, pdf_target)
-                        
-                    pdf_path = pdf_target
-                    
-                except Exception as e:
-                    # Restore first to ensure print works (if possible)
-                    sys.stdout = original_stdout
-                    sys.stderr = original_stderr
-                    
-                    error_msg = f"PDF Conversion Failed: {str(e)}"
+            if convert_pdf:
+                abs_output_path = os.path.abspath(output_path)
+                output_dir = os.path.dirname(abs_output_path)
+                pdf_target = abs_output_path.replace(".docx", ".pdf")
+
+                # Strategy 1 (Windows): docx2pdf via MS Word COM automation
+                # Most reliable on business Windows machines with Word installed
+                if platform.system() == "Windows":
+                    import sys, io
+                    original_stdout = sys.stdout
+                    original_stderr = sys.stderr
+                    try:
+                        try:
+                            import pythoncom
+                            pythoncom.CoInitialize()
+                        except Exception:
+                            pass
+                        from docx2pdf import convert as _docx2pdf_convert
+                        dummy_stream = io.StringIO()
+                        sys.stdout = dummy_stream
+                        sys.stderr = dummy_stream
+                        _docx2pdf_convert(abs_output_path, pdf_target)
+                        if os.path.exists(pdf_target):
+                            pdf_path = pdf_target
+                    except Exception as e:
+                        print(f"Word/docx2pdf conversion failed: {e}")
+                    finally:
+                        sys.stdout = original_stdout
+                        sys.stderr = original_stderr
+
+                # Strategy 2: LibreOffice headless (cross-platform fallback)
+                if not pdf_path:
+                    lo_pdf = _convert_docx_to_pdf_libreoffice(abs_output_path, output_dir)
+                    if lo_pdf and os.path.exists(lo_pdf):
+                        pdf_path = lo_pdf
+
+                if not pdf_path:
+                    error_msg = "PDF conversion failed: requires MS Word or LibreOffice"
                     print(error_msg)
-                    pdf_path = None
-                    
-                finally:
-                    # Always ensure restoration
-                    sys.stdout = original_stdout
-                    sys.stderr = original_stderr
                     
             return output_path, pdf_path, error_msg
 

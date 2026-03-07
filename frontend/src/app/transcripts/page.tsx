@@ -32,6 +32,7 @@ import {
     Loader2,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
+import { useAuth } from "@/contexts/auth-context";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -188,75 +189,11 @@ Tony Stark: ISO 27001 and NIST. And we'll need your SOC2 report before we can mo
     },
 ];
 
-// ─── Simulated AI response logic ───
-function generateAIResponse(question: string, transcript: Transcript): { answer: string; sources: string[] } {
-    const q = question.toLowerCase();
-    const sources: string[] = [];
-    let answer = "";
-
-    // Pricing / commercial topics
-    if (q.includes("pric") || q.includes("cost") || q.includes("quote") || q.includes("quotation") || q.includes("invoice")) {
-        sources.push("Transcript", "Action Items");
-        answer = `Pricing was discussed during the call with ${transcript.leadName}. ${transcript.fullText.includes("500+") ? "A 500+ seat enterprise licensing model was referenced, with a custom quotation to be prepared by the Finance team." : "A custom quotation was identified as a follow-up action item."} The action item assigned was: "${transcript.actionItems.find(a => a.task.toLowerCase().includes("pric") || a.task.toLowerCase().includes("quot"))?.task ?? "Prepare pricing documentation"}" — due ${transcript.actionItems.find(a => a.task.toLowerCase().includes("pric") || a.task.toLowerCase().includes("quot"))?.dueDate ?? "TBD"}.`;
-    }
-    // Integration / CRM
-    else if (q.includes("integrat") || q.includes("crm") || q.includes("salesforce") || q.includes("connect")) {
-        sources.push("Transcript");
-        answer = transcript.fullText.toLowerCase().includes("crm")
-            ? `Integration was discussed on the call. The client inquired about CRM integration (specifically Salesforce), and it was confirmed that a native connector exists with a typical setup time of under 48 hours. An action item to review CRM integration documentation was also assigned to the Engineering team.`
-            : `Integration topics were not a primary focus of this call. The main discussion points were: ${transcript.summary}`;
-    }
-    // Security / compliance
-    else if (q.includes("secur") || q.includes("compli") || q.includes("soc") || q.includes("gdpr") || q.includes("certif") || q.includes("nist") || q.includes("iso")) {
-        sources.push("Transcript", "Action Items");
-        answer = transcript.fullText.toLowerCase().includes("soc")
-            ? `Security and compliance were key discussion points. The platform's SOC2 Type II certification and GDPR compliance were mentioned. The client also referenced ISO 27001 and NIST frameworks. Follow-up actions include sending a SOC2 report and a custom security whitepaper.`
-            : `Security was not a primary topic in this call. The conversation focused on: ${transcript.summary}`;
-    }
-    // NDA / legal
-    else if (q.includes("nda") || q.includes("legal") || q.includes("contract") || q.includes("agreement")) {
-        sources.push("Transcript", "Action Items");
-        const ndaItem = transcript.actionItems.find(a => a.task.toLowerCase().includes("nda") || a.task.toLowerCase().includes("legal") || a.task.toLowerCase().includes("contract"));
-        answer = ndaItem
-            ? `Legal matters were discussed on this call. Specifically, ${transcript.leadName} requested an NDA before sharing further technical details. The action item "${ndaItem.task}" was assigned to ${ndaItem.assignee} and is due ${ndaItem.dueDate}.`
-            : `No specific legal or contract topics were explicitly flagged during this call. The general summary states: ${transcript.summary}`;
-    }
-    // Next steps / follow-up
-    else if (q.includes("next step") || q.includes("follow") || q.includes("scheduled") || q.includes("meeting") || q.includes("action")) {
-        sources.push("Action Items", "Summary");
-        const items = transcript.actionItems.map((a, i) => `${i + 1}. ${a.task} — ${a.assignee} (Due: ${a.dueDate})`).join("\n");
-        answer = `The following next steps and action items were identified from this call:\n\n${items || "No action items recorded."}\n\nSummary context: ${transcript.summary}`;
-    }
-    // Competition
-    else if (q.includes("competi") || q.includes("paladin") || q.includes("rival") || q.includes("other vendor") || q.includes("alternative")) {
-        sources.push("Transcript");
-        answer = transcript.fullText.toLowerCase().includes("paladin")
-            ? `Competition was mentioned during the call. ${transcript.leadName} referenced Paladin Systems as a competing solution they are evaluating. The main concern raised was about their compliance track record. This presents an opportunity to position stronger on certifications and audit transparency.`
-            : `No competing vendors were specifically mentioned in this call. The conversation stayed focused on requirements and product capabilities.`;
-    }
-    // Who said what / speakers
-    else if (q.includes("who said") || q.includes("client said") || q.includes("what did") || q.includes("mention") || q.includes("spoke")) {
-        sources.push("Transcript", "Speaker Analysis");
-        const clientSpeaker = transcript.speakers.find(s => s.role === "CLIENT");
-        answer = clientSpeaker
-            ? `On this call, ${clientSpeaker.name} (Client) spoke ${clientSpeaker.wordCount.toLocaleString()} words covering topics like: ${transcript.summary} The talk ratio was ${100 - transcript.talkRatio}% client vs ${transcript.talkRatio}% SDR.`
-            : `Speaker data is not yet available for this call.`;
-    }
-    // Summary / overview
-    else if (q.includes("summar") || q.includes("overview") || q.includes("what was discussed") || q.includes("main point") || q.includes("key point")) {
-        sources.push("Summary");
-        answer = `Here is the AI-generated summary of the call with ${transcript.leadName} (${transcript.company}) on ${transcript.date}:\n\n"${transcript.summary}"\n\nThe call lasted ${transcript.duration}, with a talk ratio of ${transcript.talkRatio}% SDR and ${100 - transcript.talkRatio}% client.`;
-    }
-    // Default fallback
-    else {
-        sources.push("Summary", "Action Items");
-        answer = `Based on the call with ${transcript.leadName} on ${transcript.date}, here is what I found relevant to your question:\n\n${transcript.summary}\n\nKey actions assigned: ${transcript.actionItems.slice(0, 3).map(a => a.task).join("; ")}.\n\nIf you'd like more specific information, try asking about pricing, integration, security, legal matters, or next steps.`;
-    }
-
-    return { answer, sources };
-}
+// ─── AI chat is now powered by Gemini via /api/v1/leads/{id}/chat (streaming SSE) ───
+// The mock generateAIResponse function has been removed.
 
 export default function TranscriptsPage() {
+    const { getHeaders } = useAuth();
     const [transcripts, setTranscripts] = useState<Transcript[]>([]);
     const [selected, setSelected] = useState<Transcript | null>(null);
     const [loadingTranscripts, setLoadingTranscripts] = useState(true);
@@ -267,7 +204,7 @@ export default function TranscriptsPage() {
     const loadTranscripts = async () => {
         setLoadingTranscripts(true);
         try {
-            const res = await fetch(`${API}/api/v1/transcripts`);
+            const res = await fetch(`${API}/api/v1/transcripts`, { headers: getHeaders(false) });
             if (!res.ok) throw new Error("Failed to fetch");
             const data = await res.json();
             const mapped: Transcript[] = data.map(apiToTranscript);
@@ -341,7 +278,7 @@ export default function TranscriptsPage() {
 
             const response = await fetch(`${API}/api/v1/transcripts/upload-text`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: getHeaders(),
                 body: JSON.stringify({
                     lead_id: targetLeadId,
                     transcript_text: transcriptText,
@@ -370,7 +307,7 @@ export default function TranscriptsPage() {
     // Load transcripts and leads on mount
     useEffect(() => {
         loadTranscripts();
-        fetch(`${API}/api/v1/leads`)
+        fetch(`${API}/api/v1/leads`, { headers: getHeaders(false) })
             .then(r => r.json())
             .then((data: any[]) => setLeads(data.map(l => ({ id: l.id, name: l.name || "(No name)", company: l.company || "" }))))
             .catch(() => { /* ignore */ });
@@ -388,7 +325,7 @@ export default function TranscriptsPage() {
     }, [chatMessages, isTyping]);
 
     const handleSendMessage = async () => {
-        if (!chatInput.trim() || !selected || selected.status !== "processed") return;
+        if (!chatInput.trim() || !selected) return;
 
         const userMsg: ChatMessage = {
             role: "user",
@@ -396,25 +333,74 @@ export default function TranscriptsPage() {
             timestamp: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
         };
 
+        const history = chatMessages.map((m) => ({ role: m.role, content: m.content }));
         setChatMessages((prev) => [...prev, userMsg]);
         setChatInput("");
         setIsTyping(true);
 
-        // Simulate AI thinking delay
-        await new Promise((r) => setTimeout(r, 800 + Math.random() * 600));
-
-        const { answer, sources } = generateAIResponse(userMsg.content, selected);
-
+        // Add empty assistant message that we'll stream into
         const aiMsg: ChatMessage = {
             role: "assistant",
-            content: answer,
+            content: "",
             timestamp: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
-            sources,
+            sources: ["Transcript", "Summary", "Action Items"],
         };
-
-        setIsTyping(false);
         setChatMessages((prev) => [...prev, aiMsg]);
+
+        try {
+            const resp = await fetch(`${API}/api/v1/leads/${selected.id}/chat`, {
+                method: "POST",
+                headers: getHeaders(),
+                body: JSON.stringify({ message: userMsg.content, history }),
+            });
+
+            if (!resp.ok || !resp.body) {
+                throw new Error(`HTTP ${resp.status}`);
+            }
+
+            const reader = resp.body.getReader();
+            const decoder = new TextDecoder();
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                const text = decoder.decode(value, { stream: true });
+                const lines = text.split("\n");
+                for (const line of lines) {
+                    if (!line.startsWith("data: ")) continue;
+                    const payload = line.slice(6).trim();
+                    if (payload === "[DONE]") break;
+                    try {
+                        const parsed = JSON.parse(payload);
+                        if (parsed.chunk) {
+                            setChatMessages((prev) => {
+                                const updated = [...prev];
+                                updated[updated.length - 1] = {
+                                    ...updated[updated.length - 1],
+                                    content: updated[updated.length - 1].content + parsed.chunk,
+                                };
+                                return updated;
+                            });
+                        }
+                    } catch {
+                        // ignore malformed chunks
+                    }
+                }
+            }
+        } catch (err) {
+            setChatMessages((prev) => {
+                const updated = [...prev];
+                updated[updated.length - 1] = {
+                    ...updated[updated.length - 1],
+                    content: `Sorry, I encountered an error while processing your question. Please ensure the backend is running and GEMINI_API_KEY is configured.\n\nError: ${err}`,
+                };
+                return updated;
+            });
+        } finally {
+            setIsTyping(false);
+        }
     };
+
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === "Enter" && !e.shiftKey) {
@@ -705,15 +691,15 @@ export default function TranscriptsPage() {
                                                 value={chatInput}
                                                 onChange={(e) => setChatInput(e.target.value)}
                                                 onKeyDown={handleKeyDown}
-                                                placeholder={selected.status === "processed" ? "Ask anything about this call… (Enter to send)" : "Process transcript first to enable chat"}
-                                                disabled={selected.status !== "processed" || isTyping}
+                                                placeholder="Ask anything about this call… (Enter to send)"
+                                                disabled={isTyping}
                                                 rows={1}
                                                 className="bg-zinc-900/80 border-zinc-700/60 text-zinc-200 placeholder:text-zinc-600 text-sm resize-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 transition-all pr-10 rounded-xl min-h-[40px] max-h-[96px]"
                                             />
                                         </div>
                                         <button
                                             onClick={handleSendMessage}
-                                            disabled={!chatInput.trim() || selected.status !== "processed" || isTyping}
+                                            disabled={!chatInput.trim() || isTyping}
                                             className="h-10 w-10 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-all shadow-[0_0_12px_rgba(99,102,241,0.25)] hover:shadow-[0_0_18px_rgba(99,102,241,0.4)] shrink-0"
                                         >
                                             <Send className="w-4 h-4 text-white" />

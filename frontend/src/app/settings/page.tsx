@@ -7,6 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from "@/components/ui/dialog";
+import {
     Settings,
     Save,
     Eye,
@@ -18,6 +25,8 @@ import {
     Gauge,
     Code,
     CheckCircle2,
+    XCircle,
+    Loader2,
     Mail,
     Plus,
     Trash2,
@@ -31,6 +40,7 @@ import {
     Briefcase,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
+import { useAuth } from "@/contexts/auth-context";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -81,6 +91,15 @@ interface Service {
     subServices: SubService[];
 }
 
+interface AdminUser {
+    id: number;
+    name: string | null;
+    email: string;
+    role: string;
+    is_active: boolean;
+    created_at: string;
+}
+
 // ─── Simple Select Dropdown Component ───
 function SelectDropdown({ value, options, onChange, placeholder }: {
     value: string;
@@ -128,6 +147,7 @@ function SelectDropdown({ value, options, onChange, placeholder }: {
 }
 
 export default function SettingsPage() {
+    const { getHeaders, user } = useAuth();
     const [saved, setSaved] = useState(false);
     const [saving, setSaving] = useState(false);
     const [loadError, setLoadError] = useState("");
@@ -177,6 +197,23 @@ export default function SettingsPage() {
     const [editingCodeId, setEditingCodeId] = useState<string | null>(null);
     const [editingCodeValue, setEditingCodeValue] = useState("");
 
+    // ─── Top-level Tab State ───
+    const [activeTab, setActiveTab] = useState("general");
+
+    // ─── Admin Users State ───
+    const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
+    const [usersLoading, setUsersLoading] = useState(false);
+    const [createUserOpen, setCreateUserOpen] = useState(false);
+    const [newUser, setNewUser] = useState({ name: "", email: "", password: "", role: "sdr" });
+    const [createUserLoading, setCreateUserLoading] = useState(false);
+
+    // ─── Admin Approvals State ───
+    interface PendingDoc { id: number; type: string; filename: string | null; approval_status: string | null; lead_name: string | null; company: string | null; created_at: string; marketing_remarks: string | null; }
+    const [pendingDocs, setPendingDocs] = useState<PendingDoc[]>([]);
+    const [docsLoading, setDocsLoading]  = useState(false);
+    const [approvalRemarks, setApprovalRemarks] = useState<Record<number, string>>({});
+    const [approvalAction, setApprovalAction]   = useState<Record<number, "loading" | "done">>({});
+
     const handleAddField = () => {
         if (!newFieldName.trim()) { setFieldError("Field name is required."); return; }
         if (!newDisplayLabel.trim()) { setFieldError("Display label is required."); return; }
@@ -213,7 +250,7 @@ export default function SettingsPage() {
 
     // Load settings from the backend on mount
     useEffect(() => {
-        fetch(`${API}/api/v1/settings`)
+        fetch(`${API}/api/v1/settings`, { headers: getHeaders(false) })
             .then(r => r.json())
             .then((data: Record<string, any>) => {
                 if (data.mom_prompt) setMomPrompt(data.mom_prompt);
@@ -238,7 +275,7 @@ export default function SettingsPage() {
         try {
             const res = await fetch(`${API}/api/v1/settings`, {
                 method: "PUT",
-                headers: { "Content-Type": "application/json" },
+                headers: getHeaders(),
                 body: JSON.stringify({
                     mom_prompt: momPrompt,
                     mom_format: momFormat,
@@ -270,7 +307,7 @@ export default function SettingsPage() {
         try {
             const res = await fetch(`${API}/api/v1/settings`, {
                 method: "PUT",
-                headers: { "Content-Type": "application/json" },
+                headers: getHeaders(),
                 body: JSON.stringify({ [key]: value }),
             });
             if (!res.ok) throw new Error("Save failed");
@@ -279,6 +316,78 @@ export default function SettingsPage() {
         } catch {
             alert("Failed to save. Is the backend running?");
         }
+    };
+
+    // ─── Admin Users Functions ───
+    const fetchAdminUsers = async () => {
+        setUsersLoading(true);
+        try {
+            const res = await fetch(`${API}/api/v1/admin/users`, { headers: getHeaders(false) });
+            if (res.ok) setAdminUsers(await res.json());
+        } catch { /* silent */ } finally { setUsersLoading(false); }
+    };
+
+    const fetchAdminDocs = async () => {
+        setDocsLoading(true);
+        try {
+            const res = await fetch(`${API}/api/v1/admin/pending-documents`, { headers: getHeaders(false) });
+            if (res.ok) setPendingDocs(await res.json());
+        } catch { /* silent */ } finally { setDocsLoading(false); }
+    };
+
+    const handleAdminApprove = async (docId: number) => {
+        setApprovalAction(prev => ({ ...prev, [docId]: "loading" }));
+        try {
+            const res = await fetch(`${API}/api/v1/admin/documents/${docId}/approve`, {
+                method: "POST",
+                headers: getHeaders(),
+                body: JSON.stringify({ remarks: approvalRemarks[docId] || null }),
+            });
+            if (res.ok) { setApprovalAction(prev => ({ ...prev, [docId]: "done" })); fetchAdminDocs(); }
+        } catch { /* silent */ }
+    };
+
+    const handleAdminReject = async (docId: number) => {
+        if (!approvalRemarks[docId]?.trim()) { alert("Remarks are required when rejecting."); return; }
+        setApprovalAction(prev => ({ ...prev, [docId]: "loading" }));
+        try {
+            const res = await fetch(`${API}/api/v1/admin/documents/${docId}/reject`, {
+                method: "POST",
+                headers: getHeaders(),
+                body: JSON.stringify({ remarks: approvalRemarks[docId] }),
+            });
+            if (res.ok) { setApprovalAction(prev => ({ ...prev, [docId]: "done" })); fetchAdminDocs(); }
+        } catch { /* silent */ }
+    };
+
+    useEffect(() => {
+        if (activeTab === "users") fetchAdminUsers();
+        if (activeTab === "approvals") fetchAdminDocs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeTab]);
+
+    const handleCreateUser = async () => {
+        setCreateUserLoading(true);
+        try {
+            const res = await fetch(`${API}/api/v1/admin/users`, {
+                method: "POST",
+                headers: getHeaders(),
+                body: JSON.stringify(newUser),
+            });
+            if (res.ok) {
+                setCreateUserOpen(false);
+                setNewUser({ name: "", email: "", password: "", role: "sdr" });
+                fetchAdminUsers();
+            }
+        } catch { /* silent */ } finally { setCreateUserLoading(false); }
+    };
+
+    const handleDeactivateUser = async (userId: number) => {
+        await fetch(`${API}/api/v1/admin/users/${userId}`, {
+            method: "DELETE",
+            headers: getHeaders(false),
+        });
+        fetchAdminUsers();
     };
 
     // Map field type to badge color
@@ -311,8 +420,37 @@ export default function SettingsPage() {
         <div className="flex flex-col h-full w-full">
             <Header title="Settings & Knowledge Base" subtitle="Configure AI behavior, prompt templates, and automation rules." />
 
+            {/* ─── Top-level Tab Bar ─── */}
+            <div className="px-8 pt-4 border-b border-zinc-800/60 flex gap-1">
+                <button
+                    onClick={() => setActiveTab("general")}
+                    className={`px-4 py-2 text-sm font-semibold rounded-t-md transition-all border-b-2 ${activeTab === "general" ? "text-white border-indigo-500" : "text-zinc-500 border-transparent hover:text-zinc-300"}`}
+                >
+                    General
+                </button>
+                {user?.role === "admin" && (
+                    <button
+                        onClick={() => setActiveTab("users")}
+                        className={`px-4 py-2 text-sm font-semibold rounded-t-md transition-all border-b-2 ${activeTab === "users" ? "text-white border-indigo-500" : "text-zinc-500 border-transparent hover:text-zinc-300"}`}
+                    >
+                        Users
+                    </button>
+                )}
+                {user?.role === "admin" && (
+                    <button
+                        onClick={() => setActiveTab("approvals")}
+                        className={`px-4 py-2 text-sm font-semibold rounded-t-md transition-all border-b-2 ${activeTab === "approvals" ? "text-white border-cyan-500" : "text-zinc-500 border-transparent hover:text-zinc-300"}`}
+                    >
+                        Pending Approvals
+                    </button>
+                )}
+            </div>
+
             <div className="flex-1 p-8 pt-6 overflow-y-auto">
                 <div className="max-w-4xl space-y-6">
+
+                    {/* ─── General Tab ─── */}
+                    {activeTab === "general" && (<>
 
                     {/* ─── Custom Fields ─── */}
                     <div className="p-6 rounded-xl border border-zinc-800/60 bg-[#0c0c0c] shadow-lg">
@@ -887,8 +1025,172 @@ export default function SettingsPage() {
                         )}
                         {loadError && <span className="text-amber-400 text-xs">{loadError}</span>}
                     </div>
+                    </>)}
+
+                    {/* ─── Users Tab ─── */}
+                    {activeTab === "users" && user?.role === "admin" && (
+                        <div className="p-6 rounded-xl border border-zinc-800/60 bg-[#0c0c0c] shadow-lg">
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <h3 className="text-sm font-semibold text-white">User Management</h3>
+                                        <p className="text-xs text-zinc-500 mt-0.5">Create and manage user accounts and roles</p>
+                                    </div>
+                                    <Button size="sm" className="bg-indigo-600 hover:bg-indigo-500 h-8 text-xs" onClick={() => setCreateUserOpen(true)}>
+                                        + Add User
+                                    </Button>
+                                </div>
+
+                                {usersLoading ? (
+                                    <div className="text-zinc-500 text-sm text-center py-8">Loading users...</div>
+                                ) : (
+                                    <div className="space-y-2">
+                                        {adminUsers.map(u => (
+                                            <div key={u.id} className="flex items-center justify-between p-3 bg-zinc-900/50 border border-zinc-800/50 rounded-lg">
+                                                <div>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-sm font-medium text-white">{u.name || u.email.split("@")[0]}</span>
+                                                        <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${
+                                                            u.role === "admin" ? "bg-rose-500/20 text-rose-400" :
+                                                            u.role === "team_lead" ? "bg-indigo-500/20 text-indigo-400" :
+                                                            u.role === "finance" ? "bg-amber-500/20 text-amber-400" :
+                                                            u.role === "legal" ? "bg-violet-500/20 text-violet-400" :
+                                                            "bg-zinc-700/50 text-zinc-400"
+                                                        }`}>{u.role.replace("_", " ")}</span>
+                                                        {!u.is_active && <span className="text-[10px] text-rose-500 font-bold">INACTIVE</span>}
+                                                    </div>
+                                                    <div className="text-xs text-zinc-500">{u.email}</div>
+                                                </div>
+                                                {u.is_active && (
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        className="h-7 text-xs border-zinc-700 text-zinc-400 hover:text-rose-400 hover:border-rose-500/30"
+                                                        onClick={() => handleDeactivateUser(u.id)}
+                                                    >
+                                                        Deactivate
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ─── Admin Approvals Tab ─── */}
+                    {activeTab === "approvals" && user?.role === "admin" && (
+                        <div className="p-6 rounded-xl border border-zinc-800/60 bg-[#0c0c0c] shadow-lg">
+                            <div className="flex items-center justify-between mb-4">
+                                <div>
+                                    <h3 className="text-sm font-semibold text-white">Pending Admin Approvals</h3>
+                                    <p className="text-xs text-zinc-500 mt-0.5">Documents approved by Marketing awaiting final Admin sign-off</p>
+                                </div>
+                                <Button size="sm" variant="outline" className="h-7 text-xs border-zinc-700 text-zinc-400 hover:bg-zinc-800 gap-1.5" onClick={fetchAdminDocs} disabled={docsLoading}>
+                                    <RotateCw className={`w-3 h-3 ${docsLoading ? "animate-spin" : ""}`} />Refresh
+                                </Button>
+                            </div>
+
+                            {docsLoading ? (
+                                <div className="flex items-center justify-center py-10 gap-2 text-zinc-500">
+                                    <Loader2 className="w-4 h-4 animate-spin" /><span className="text-sm">Loading...</span>
+                                </div>
+                            ) : pendingDocs.length === 0 ? (
+                                <div className="text-center py-10 text-zinc-600">
+                                    <CheckCircle2 className="w-8 h-8 mb-2 mx-auto opacity-20" />
+                                    <p className="text-sm">No documents awaiting admin approval</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {pendingDocs.map(doc => {
+                                        const typeName = (doc.type ?? "Document").replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase());
+                                        const isDone = approvalAction[doc.id] === "done";
+                                        const isLoading = approvalAction[doc.id] === "loading";
+                                        return (
+                                            <div key={doc.id} className={`border border-zinc-800/50 rounded-xl p-4 space-y-3 ${isDone ? "opacity-50" : ""}`}>
+                                                <div className="flex items-start justify-between gap-2">
+                                                    <div>
+                                                        <p className="text-sm font-semibold text-white">{typeName} — {doc.company || `#${doc.id}`}</p>
+                                                        <p className="text-xs text-zinc-500 mt-0.5">{doc.lead_name || "—"} · {new Date(doc.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</p>
+                                                        {doc.marketing_remarks && (
+                                                            <p className="text-[11px] text-fuchsia-400 mt-1 italic">Marketing: &ldquo;{doc.marketing_remarks}&rdquo;</p>
+                                                        )}
+                                                    </div>
+                                                    <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded border ${doc.approval_status === "rejected_admin" ? "bg-rose-500/10 text-rose-400 border-rose-500/20" : "bg-cyan-500/10 text-cyan-400 border-cyan-500/20"}`}>
+                                                        {doc.approval_status === "rejected_admin" ? "Rejected" : "Pending"}
+                                                    </span>
+                                                </div>
+                                                {!isDone && (
+                                                    <>
+                                                        <textarea
+                                                            rows={2}
+                                                            placeholder="Admin remarks (optional for approval, required for rejection)"
+                                                            value={approvalRemarks[doc.id] || ""}
+                                                            onChange={e => setApprovalRemarks(prev => ({ ...prev, [doc.id]: e.target.value }))}
+                                                            className="w-full bg-zinc-900/60 border border-zinc-700 rounded-lg text-xs text-zinc-300 px-3 py-2 placeholder:text-zinc-600 resize-none outline-none focus:border-indigo-500/60 transition-colors"
+                                                        />
+                                                        <div className="flex gap-2">
+                                                            <Button size="sm" variant="outline" className="h-7 text-xs border-rose-500/30 text-rose-400 hover:bg-rose-500/10 gap-1" onClick={() => handleAdminReject(doc.id)} disabled={isLoading}>
+                                                                {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <XCircle className="w-3 h-3" />}Reject
+                                                            </Button>
+                                                            <Button size="sm" className="h-7 text-xs bg-cyan-600 hover:bg-cyan-500 text-white gap-1" onClick={() => handleAdminApprove(doc.id)} disabled={isLoading}>
+                                                                {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />}Final Approve
+                                                            </Button>
+                                                        </div>
+                                                    </>
+                                                )}
+                                                {isDone && <p className="text-xs text-emerald-400 flex items-center gap-1"><CheckCircle2 className="w-3 h-3" />Action recorded</p>}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                 </div>
             </div>
+
+            {/* ─── Create User Dialog ─── */}
+            <Dialog open={createUserOpen} onOpenChange={setCreateUserOpen}>
+                <DialogContent className="bg-[#111] border-zinc-800 text-white max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Create New User</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-3 py-2">
+                        <div>
+                            <Label className="text-xs text-zinc-400">Full Name</Label>
+                            <Input className="mt-1 bg-zinc-800/50 border-zinc-700 text-white" placeholder="Jane Smith" value={newUser.name} onChange={e => setNewUser({...newUser, name: e.target.value})} />
+                        </div>
+                        <div>
+                            <Label className="text-xs text-zinc-400">Email</Label>
+                            <Input type="email" className="mt-1 bg-zinc-800/50 border-zinc-700 text-white" placeholder="jane@company.com" value={newUser.email} onChange={e => setNewUser({...newUser, email: e.target.value})} />
+                        </div>
+                        <div>
+                            <Label className="text-xs text-zinc-400">Password</Label>
+                            <Input type="password" className="mt-1 bg-zinc-800/50 border-zinc-700 text-white" placeholder="Minimum 8 characters" value={newUser.password} onChange={e => setNewUser({...newUser, password: e.target.value})} />
+                        </div>
+                        <div>
+                            <Label className="text-xs text-zinc-400">Role</Label>
+                            <select className="w-full mt-1 h-9 bg-zinc-800 border border-zinc-700 text-white rounded-md text-sm px-2" value={newUser.role} onChange={e => setNewUser({...newUser, role: e.target.value})}>
+                                <option value="sdr">SDR</option>
+                                <option value="team_lead">Team Lead</option>
+                                <option value="legal">Legal</option>
+                                <option value="finance">Finance</option>
+                                <option value="marketing">Marketing</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" className="border-zinc-700 text-zinc-400" onClick={() => setCreateUserOpen(false)}>Cancel</Button>
+                        <Button className="bg-indigo-600 hover:bg-indigo-500" onClick={handleCreateUser} disabled={createUserLoading}>
+                            {createUserLoading ? "Creating..." : "Create User"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

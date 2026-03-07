@@ -2,6 +2,8 @@
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+import { toast } from "@/components/ui/toast-notification";
+import { useAuth } from "@/contexts/auth-context";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/layout/header";
@@ -70,6 +72,8 @@ import {
   SlidersHorizontal,
   X,
   ArrowUpDown,
+  Loader2,
+  RefreshCw,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 
@@ -193,6 +197,18 @@ const requestableDocuments = [
   "Invoice + Payment Link",
   "Sample List",
 ];
+
+// Maps human-readable document labels (shown in the UI dialog) to internal postCallDocs keys
+const LABEL_TO_DOC_KEY: Record<string, string> = {
+  "Agreement":                  "contract",
+  "Non-Disclosure Agreement":   "non_disclosure",
+  "Non-Compete Agreement":      "non_compete",
+  "Quotation":                  "quotation",
+  "One Page / Brochure":        "brochure",
+  "Corporate Deck":             "brochure",
+  "Invoice + Payment Link":     "invoice",
+  "Sample List":                "sample_list",
+};
 
 // ─── Mock Data ───
 const initialLeads: Lead[] = [
@@ -488,6 +504,7 @@ function mapApiToLead(l: Record<string, unknown>): Lead {
 
 // ─── Main Component ───
 export default function LeadsDashboard() {
+  const { getHeaders } = useAuth();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
 
@@ -501,11 +518,27 @@ export default function LeadsDashboard() {
   const [genDocType, setGenDocType] = useState("invoice");
   const [genDocFieldValues, setGenDocFieldValues] = useState<Record<string, string>>({});
   const [genDownloadUrl, setGenDownloadUrl] = useState<string | null>(null);
+  const [genViewUrl, setGenViewUrl] = useState<string | null>(null);
   const [genIsGenerating, setGenIsGenerating] = useState(false);
   const [genTemplateName, setGenTemplateName] = useState("");
   const [templatesList, setTemplatesList] = useState<{ name: string; variables: string[]; category: string }[]>([]);
   const [genDocServices, setGenDocServices] = useState<string[]>([]);
   const [genDocSubServices, setGenDocSubServices] = useState<string[]>([]);
+
+  // ─── AI Layer ───
+  const [aiAnalysis, setAiAnalysis] = useState<Record<string, any>>({});  // keyed by leadId
+  const [aiAnalyzing, setAiAnalyzing] = useState(false);
+  const [genPrefilling, setGenPrefilling] = useState(false);
+  const [researchData, setResearchData] = useState<Record<string, any>>({});  // keyed by leadId
+  const [researching, setResearching] = useState(false);
+  const [emailDrafting, setEmailDrafting] = useState(false);
+  // Regenerate dialog
+  const [regenOpen, setRegenOpen] = useState(false);
+  const [regenDoc, setRegenDoc] = useState<any | null>(null);
+  const [regenFields, setRegenFields] = useState<Record<string, string>>({});
+  const [regenLoading, setRegenLoading] = useState(false);
+  const [regenTemplateName, setRegenTemplateName] = useState("");
+
 
   // Collapsible sections
   const [postCallDataOpen, setPostCallDataOpen] = useState(true);
@@ -536,17 +569,35 @@ export default function LeadsDashboard() {
   const [emailBody, setEmailBody] = useState("");
   const [emailSent, setEmailSent] = useState(false);
 
-  // ─── Reschedule Dialog ───
+  // ─── Reschedule / Schedule Dialog ───
   const [rescheduleOpen, setRescheduleOpen] = useState(false);
+  const [rescheduleMode, setRescheduleMode] = useState<"schedule" | "reschedule">("reschedule");
   const [rescheduleLeadId, setRescheduleLeadId] = useState<string | null>(null);
   const [rescheduleDate, setRescheduleDate] = useState("");
   const [rescheduleNewLink, setRescheduleNewLink] = useState("");
   const [rescheduleCc, setRescheduleCc] = useState("");
   const [rescheduleIsLoading, setRescheduleIsLoading] = useState(false);
+  const [rescheduleEnableTeams, setRescheduleEnableTeams] = useState(false);
+  const [rescheduleSendEmail, setRescheduleSendEmail] = useState(true);
 
   // ─── Documents loaded from DB per lead ───
-  type DbDoc = { id: number; type: string; filename: string; download_url: string; status: string; created_at: string };
+  type DbDoc = { id: number; type: string; filename: string; pdf_filename?: string | null; download_url: string; view_url: string | null; pdf_view_url?: string | null; status: string; approval_status?: string | null; created_at: string };
   const [leadDbDocs, setLeadDbDocs] = useState<Record<string, DbDoc[]>>({});
+
+  // ─── Document Viewer Dialog ───
+  const [docViewerOpen, setDocViewerOpen] = useState(false);
+  const [docViewerUrl, setDocViewerUrl] = useState("");
+  const [docViewerFilename, setDocViewerFilename] = useState("");
+
+  const openDocViewer = (url: string, filename: string) => {
+    setDocViewerUrl(url);
+    setDocViewerFilename(filename);
+    setDocViewerOpen(true);
+  };
+
+  // Convert a download URL to its inline view counterpart
+  const toViewUrl = (downloadUrl: string): string =>
+    downloadUrl.replace(/\/download$/, "/view");
 
   // Inline edit dialog
   const [editFieldOpen, setEditFieldOpen] = useState(false);
@@ -569,6 +620,11 @@ export default function LeadsDashboard() {
   // ─── Document Usage Intent Dialog ───
   const [docUsageOpen, setDocUsageOpen] = useState(false);
   const [docUsagePendingDocKey, setDocUsagePendingDocKey] = useState<string>("");
+
+  // ─── Calendar Connection ───
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [calendarConnected, setCalendarConnected] = useState<string | null>(null); // provider name or null
+  const [calendarConnecting, setCalendarConnecting] = useState(false);
 
   // ─── Add Lead Dialog ───
   const [addLeadOpen, setAddLeadOpen] = useState(false);
@@ -603,7 +659,7 @@ export default function LeadsDashboard() {
   useEffect(() => {
     const fetchLeads = async () => {
       try {
-        const res = await fetch(`${API}/api/v1/leads`);
+        const res = await fetch(`${API}/api/v1/leads`, { headers: getHeaders(false) });
         if (!res.ok) return;
         const data = await res.json();
         if (!Array.isArray(data)) return;
@@ -653,7 +709,7 @@ export default function LeadsDashboard() {
     // Load settings (custom fields + services) once on mount
     const fetchSettings = async () => {
       try {
-        const sRes = await fetch(`${API}/api/v1/settings`);
+        const sRes = await fetch(`${API}/api/v1/settings`, { headers: getHeaders(false) });
         if (sRes.ok) {
           const sData = await sRes.json();
           if (sData.services && Array.isArray(sData.services)) setSettingsServices(sData.services);
@@ -673,10 +729,19 @@ export default function LeadsDashboard() {
     if (!selectedLead) return;
     const fetchLeadDocs = async () => {
       try {
-        const res = await fetch(`${API}/api/v1/leads/${selectedLead.id}/documents`);
+        const res = await fetch(`${API}/api/v1/leads/${selectedLead.id}/documents`, { headers: getHeaders(false) });
         if (res.ok) {
           const docs = await res.json();
-          setLeadDbDocs(prev => ({ ...prev, [selectedLead.id]: docs }));
+          // Prefer PDF view URL when available so the viewer shows PDF in iframe
+          const enrichedDocs = docs.map((d: DbDoc) => ({
+            ...d,
+            view_url: d.pdf_view_url
+              ? `${API}${d.pdf_view_url}`
+              : d.view_url
+              ? `${API}${d.view_url}`
+              : null,
+          }));
+          setLeadDbDocs(prev => ({ ...prev, [selectedLead.id]: enrichedDocs }));
           // Also update docDownloadUrls from DB docs
           const urlMap: Record<string, string> = {};
           docs.forEach((d: DbDoc) => {
@@ -689,6 +754,24 @@ export default function LeadsDashboard() {
     };
     fetchLeadDocs();
   }, [selectedLead?.id]);
+
+  // ─── Detect OAuth calendar callback from URL params ───
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const connectedProvider = params.get("calendar_connected");
+    if (connectedProvider) {
+      const providerName =
+        connectedProvider === "google" ? "Google Calendar" :
+        connectedProvider === "microsoft" ? "Microsoft Outlook" :
+        connectedProvider;
+      setCalendarConnected(providerName);
+      toast("success", "Calendar connected", `${providerName} is now syncing.`);
+      // Remove the query param from the URL without a page reload
+      const newUrl = window.location.pathname + window.location.hash;
+      window.history.replaceState({}, "", newUrl);
+    }
+  }, []);
 
   const updateNewLead = (field: string, value: string | File | null) => {
     setNewLeadForm((prev) => {
@@ -742,7 +825,7 @@ export default function LeadsDashboard() {
     try {
       const response = await fetch(`${API}/api/v1/leads`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getHeaders(),
         body: JSON.stringify({
           name: newLeadForm.name.trim(),
           company: newLeadForm.company.trim(),
@@ -831,7 +914,7 @@ export default function LeadsDashboard() {
     try {
       await fetch(`${API}/api/v1/leads/${leadId}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: getHeaders(),
         body: JSON.stringify({ email: lead.email, ...fields }),
       });
     } catch {
@@ -871,6 +954,41 @@ export default function LeadsDashboard() {
     bubblesLink: "bubbles_link",
   };
 
+  // ─── Teams Meeting & Calendar Helpers ───
+  const generateTeamsUrl = (subject: string, startIso: string) => {
+    const start = new Date(startIso);
+    const end = new Date(start.getTime() + 60 * 60 * 1000);
+    return `https://teams.microsoft.com/l/meeting/new?subject=${encodeURIComponent(subject)}&startTime=${encodeURIComponent(start.toISOString())}&endTime=${encodeURIComponent(end.toISOString())}&content=${encodeURIComponent("Joining link for demo meeting")}`;
+  };
+
+  const downloadIcs = (subject: string, startIso: string, teamsLink: string, leadEmail: string) => {
+    const start = new Date(startIso);
+    const end = new Date(start.getTime() + 60 * 60 * 1000);
+    const fmt = (d: Date) => d.toISOString().replace(/[-:.]/g, "").slice(0, 15) + "Z";
+    const lines = [
+      "BEGIN:VCALENDAR",
+      "VERSION:2.0",
+      "PRODID:-//Pulse AI//Demo Scheduler//EN",
+      "BEGIN:VEVENT",
+      `DTSTART:${fmt(start)}`,
+      `DTEND:${fmt(end)}`,
+      `SUMMARY:${subject}`,
+      teamsLink ? `LOCATION:${teamsLink}` : "",
+      teamsLink ? `DESCRIPTION:Join Teams Meeting:\\n${teamsLink}` : "",
+      leadEmail ? `ATTENDEE;CN=${leadEmail}:mailto:${leadEmail}` : "",
+      `UID:${Date.now()}@pulseai`,
+      "END:VEVENT",
+      "END:VCALENDAR",
+    ].filter(Boolean).join("\r\n");
+    const blob = new Blob([lines], { type: "text/calendar" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${subject.replace(/\s+/g, "_")}.ics`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   // ─── Dynamic status options (merged with custom fields from Settings) ───
   const dynamicLeadStatusOptions = [
     ...leadStatusOptions,
@@ -901,10 +1019,13 @@ export default function LeadsDashboard() {
       // When rescheduling, open the reschedule dialog
       if (value === "Demo Rescheduled") {
         const lead = leads.find(l => l.id === leadId);
+        setRescheduleMode("reschedule");
         setRescheduleLeadId(leadId);
         setRescheduleDate("");
         setRescheduleNewLink(lead?.teamsLink || "");
         setRescheduleCc("");
+        setRescheduleEnableTeams(false);
+        setRescheduleSendEmail(true);
         setRescheduleOpen(true);
       }
     }
@@ -938,34 +1059,66 @@ export default function LeadsDashboard() {
     const lead = leads.find(l => l.id === rescheduleLeadId);
     if (!lead) { setRescheduleIsLoading(false); return; }
 
+    const finalTeamsLink = rescheduleNewLink || lead.teamsLink;
     const ccList = rescheduleCc
       .split(",")
       .map(e => e.trim())
       .filter(e => e.length > 0);
 
     try {
-      await fetch(`${API}/api/v1/leads/${rescheduleLeadId}/reschedule`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          lead_id: parseInt(rescheduleLeadId),
-          new_datetime: rescheduleDate,
-          teams_link: rescheduleNewLink || lead.teamsLink,
-          to_email: lead.email,
-          cc_emails: ccList,
-          lead_name: lead.name,
-          company: lead.company,
-        }),
-      });
+      if (rescheduleSendEmail) {
+        await fetch(`${API}/api/v1/leads/${rescheduleLeadId}/reschedule`, {
+          method: "POST",
+          headers: getHeaders(),
+          body: JSON.stringify({
+            lead_id: parseInt(rescheduleLeadId),
+            new_datetime: rescheduleDate,
+            teams_link: finalTeamsLink,
+            to_email: lead.email,
+            cc_emails: ccList,
+            lead_name: lead.name,
+            company: lead.company,
+          }),
+        });
+      } else {
+        // Just update demo time / teams link without sending email
+        await fetch(`${API}/api/v1/leads/${rescheduleLeadId}`, {
+          method: "PUT",
+          headers: getHeaders(),
+          body: JSON.stringify({
+            email: lead.email,
+            demo_time: rescheduleDate,
+            teams_link: finalTeamsLink,
+            ...(rescheduleMode === "schedule" ? { demo_status: "Demo Scheduled" } : {}),
+          }),
+        });
+      }
+
       const updated = leads.map(l =>
         l.id === rescheduleLeadId
-          ? { ...l, demoTime: rescheduleDate, teamsLink: rescheduleNewLink || l.teamsLink }
+          ? {
+              ...l,
+              demoTime: rescheduleDate,
+              teamsLink: finalTeamsLink,
+              ...(rescheduleMode === "schedule" ? { demoStatus: "Demo Scheduled" } : {}),
+            }
           : l
       );
       setLeads(updated);
       if (selectedLead?.id === rescheduleLeadId) {
         setSelectedLead(updated.find(l => l.id === rescheduleLeadId)!);
       }
+
+      // Download ICS calendar invite
+      downloadIcs(
+        `Demo — ${lead.company}`,
+        rescheduleDate,
+        finalTeamsLink,
+        lead.email,
+      );
+
+      toast("success", rescheduleMode === "schedule" ? "Demo Scheduled" : "Demo Rescheduled",
+        rescheduleSendEmail ? "Booking confirmation sent to client." : "Calendar invite downloaded.");
     } catch { /* silent */ }
 
     setRescheduleOpen(false);
@@ -977,12 +1130,41 @@ export default function LeadsDashboard() {
 
     // Read actual file content to intelligently detect requested docs
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       const fileContent = e.target?.result as string || "";
+
+      // Map uploadType → backend field name
+      const backendTextKey =
+        uploadType === "transcript" ? "transcript_text" :
+        uploadType === "summary" ? "summary_text" :
+        "action_items_text";
+
+      // Map uploadType → local Lead field name
+      const localTextKey: keyof Lead =
+        uploadType === "transcript" ? "transcript" :
+        uploadType === "summary" ? "summary" :
+        "actionItems";
+
+      // Persist text content to backend
+      try {
+        const res = await fetch(`${API}/api/v1/leads/${selectedLead.id}`, {
+          method: "PUT",
+          headers: getHeaders(),
+          body: JSON.stringify({
+            email: selectedLead.email,
+            [backendTextKey]: fileContent,
+          }),
+        });
+        if (!res.ok) throw new Error("Backend returned an error");
+        toast("success", "Document uploaded", `${uploadType === "actionItems" ? "Action items" : uploadType.charAt(0).toUpperCase() + uploadType.slice(1)} saved and ready for generation.`);
+      } catch {
+        toast("error", "Upload failed", "Could not save to backend. Check your connection and try again.");
+      }
 
       setLeads((prev) => {
         const lead = prev.find((l) => l.id === selectedLead.id)!;
-        const patch: Partial<Lead> = { [uploadType]: uploadFile.name };
+        // Store actual text content in local state (not just filename)
+        const patch: Partial<Lead> = { [localTextKey]: fileContent };
 
         // Auto-detect docs from actual file text + existing stored text
         const allText = [
@@ -1006,7 +1188,6 @@ export default function LeadsDashboard() {
         const currentSub = lead.demoSubStatus;
 
         if (hasDocsDetected && !advancedStatuses.includes(currentSub)) {
-          // Delay slightly so state settles before opening dialog
           setTimeout(() => {
             autoUpdateStatus(selectedLead.id, { demoStatus: "Demo Completed", demoSubStatus: "Documents Requested" });
             setDocSelectLeadId(selectedLead.id);
@@ -1042,7 +1223,7 @@ export default function LeadsDashboard() {
     try {
       await fetch(`${API}/api/v1/leads/${selectedLead.id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: getHeaders(),
         body: JSON.stringify({ email: selectedLead.email, generated_docs: newGeneratedDocs }),
       });
     } catch { /* silent */ }
@@ -1052,12 +1233,13 @@ export default function LeadsDashboard() {
     if (!selectedLead) return;
     setGenIsGenerating(true);
     setGenDownloadUrl(null);
+    setGenViewUrl(null);
 
     // Enrich data with lead fields and selected services
     const enrichedData: Record<string, string> = {
       ...genDocFieldValues,
-      // Ensure contact_person maps to lead name
-      contact_person: genDocFieldValues.contact_person || selectedLead.name,
+      // Prefer explicitly-filled form field, then stored KYC contactPerson, then lead display name
+      contact_person: genDocFieldValues.contact_person || selectedLead.contactPerson || selectedLead.name,
       client_name: genDocFieldValues.client_name || selectedLead.company,
       lead_name: selectedLead.name,
     };
@@ -1069,19 +1251,23 @@ export default function LeadsDashboard() {
       try {
         const res = await fetch(`${API}/api/v1/documents/generate`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: getHeaders(),
           body: JSON.stringify({
             template_name: genTemplateName,
             data: enrichedData,
-            convert_pdf: false,
+            convert_pdf: true,
             lead_id: selectedLead.id,
             doc_type: genDocType,
           }),
         });
         if (res.ok) {
-          const { filename } = await res.json();
+          const genResult = await res.json();
+          const { filename, pdf_filename } = genResult;
+          // Prefer PDF filename for preview, fall back to primary filename
+          const viewFilename = pdf_filename || filename;
           const url = `${API}/api/v1/documents/${filename}/download`;
           setGenDownloadUrl(url);
+          setGenViewUrl(`${API}/api/v1/documents/${viewFilename}/view`);
           // Record download URL for this lead+doc
           const newUrlMap = { [`${selectedLead.id}_${genDocType}`]: url };
           setDocDownloadUrls(prev => ({ ...prev, ...newUrlMap }));
@@ -1092,7 +1278,7 @@ export default function LeadsDashboard() {
           leadUrlEntries.forEach(([k, v]) => { updatedUrls[k.replace(`${selectedLead.id}_`, "")] = v; });
           fetch(`${API}/api/v1/leads/${selectedLead.id}`, {
             method: "PUT",
-            headers: { "Content-Type": "application/json" },
+            headers: getHeaders(),
             body: JSON.stringify({ email: selectedLead.email, generated_doc_urls: updatedUrls }),
           }).catch(() => {});
         }
@@ -1111,11 +1297,14 @@ export default function LeadsDashboard() {
     setSelectedLead(updatedLead);
     autoUpdateStatus(selectedLead.id, { demoSubStatus: "Documents Requested" });
 
+    // Save field values in localStorage so AI regen can reference them later
+    try { localStorage.setItem(`lead-${selectedLead.id}-doc-${genDocType}`, JSON.stringify(genDocFieldValues)); } catch { /* ignore */ }
+
     // Persist generated_docs to backend
     try {
       await fetch(`${API}/api/v1/leads/${selectedLead.id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: getHeaders(),
         body: JSON.stringify({
           email: selectedLead.email,
           generated_docs: updatedLead.generatedDocs,
@@ -1133,6 +1322,7 @@ export default function LeadsDashboard() {
   const openGenDocsDialog = async (docType: string) => {
     setGenDocType(docType);
     setGenDownloadUrl(null);
+    setGenViewUrl(null);
     setGenIsGenerating(false);
     setGenDocServices([]);
     setGenDocSubServices([]);
@@ -1165,7 +1355,7 @@ export default function LeadsDashboard() {
 
     // Fetch templates from backend to populate selection
     try {
-      const res = await fetch(`${API}/api/v1/templates`);
+      const res = await fetch(`${API}/api/v1/templates`, { headers: getHeaders(false) });
       if (res.ok) {
         const data = await res.json();
         setTemplatesList(Array.isArray(data) ? data : []);
@@ -1206,7 +1396,7 @@ export default function LeadsDashboard() {
 
     // Load services from settings (always refresh so latest saved services appear)
     try {
-      const sRes = await fetch(`${API}/api/v1/settings`);
+      const sRes = await fetch(`${API}/api/v1/settings`, { headers: getHeaders(false) });
       if (sRes.ok) {
         const sData = await sRes.json();
         // Only overwrite if we actually got services — keep existing state otherwise
@@ -1222,28 +1412,41 @@ export default function LeadsDashboard() {
     setGenDocsOpen(true);
   };
 
-  const openEmailDraft = () => {
+  const openEmailDraft = async () => {
     if (!selectedLead) return;
     setEmailTo(selectedLead.email);
     setEmailCc("");
     setEmailSent(false);
-    setEmailSubject(`Follow-up: ${selectedLead.company} Demo - Minutes & Next Steps`);
-    // Build body with Summary and Action Items embedded
-    const summaryBlock = selectedLead.summary
-      ? `MEETING SUMMARY\n${"-".repeat(40)}\n${selectedLead.summary}\n\n`
-      : "";
-    const actionBlock = selectedLead.actionItems
-      ? `ACTION ITEMS\n${"-".repeat(40)}\n${selectedLead.actionItems}\n\n`
-      : "";
-    const hasContent = summaryBlock || actionBlock;
-
-    setEmailBody(
-      `Dear ${selectedLead.name},\n\nThank you for your time during today's demonstration. Please find below the key highlights from our call, along with any relevant documents attached.\n\n` +
-      (hasContent ? `${summaryBlock}${actionBlock}` : "") +
-      `Please review and let us know if you have any questions or require any modifications.\n\nLooking forward to the next steps.\n\nBest regards,\nSDR Team`
-    );
     setEmailOpen(true);
+    setEmailDrafting(true);
+
+    try {
+      const res = await fetch(`${API}/api/v1/leads/${selectedLead.id}/draft-email`, {
+        method: "POST",
+        headers: getHeaders(),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.subject) setEmailSubject(data.subject);
+        if (data.body) setEmailBody(data.body);
+      } else {
+        throw new Error("API error");
+      }
+    } catch {
+      // Fallback to static template
+      setEmailSubject(`Follow-up: ${selectedLead.company} Demo - Minutes & Next Steps`);
+      const summaryBlock = selectedLead.summary ? `MEETING SUMMARY\n${"-".repeat(40)}\n${selectedLead.summary}\n\n` : "";
+      const actionBlock = selectedLead.actionItems ? `ACTION ITEMS\n${"-".repeat(40)}\n${selectedLead.actionItems}\n\n` : "";
+      setEmailBody(
+        `Dear ${selectedLead.name},\n\nThank you for your time during today's demonstration.\n\n` +
+        (summaryBlock || actionBlock ? `${summaryBlock}${actionBlock}` : "") +
+        `Please review and let us know if you have any questions.\n\nBest regards,\nSDR Team`
+      );
+    } finally {
+      setEmailDrafting(false);
+    }
   };
+
 
   const handleSendEmail = () => {
     setEmailSent(true);
@@ -1280,7 +1483,7 @@ export default function LeadsDashboard() {
     try {
       await fetch(`${API}/api/v1/leads/${selectedLead.id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: getHeaders(),
         body: JSON.stringify({
           email: selectedLead.email,
           [editFieldName]: editFieldValue.trim(),
@@ -1306,21 +1509,33 @@ export default function LeadsDashboard() {
     return selectedLead.generatedDocs.includes(docType);
   };
 
-  // Derive effective requested docs: from explicit list OR auto-detected from text
+  // Returns the effective set of requested docs for this lead.
+  // Uses explicitly selected docs from the status dialog.
+  // NOTE: Keyword auto-detection is intentionally removed — AI extraction will replace it.
   const getEffectiveRequestedDocs = (): string[] => {
     if (!selectedLead) return [];
-    const explicit = selectedLead.requestedDocs;
-    const allText = [selectedLead.transcript || "", selectedLead.summary || "", selectedLead.actionItems || ""].join(" ");
-    const detected = detectRequestedDocs(allText);
-    return [...new Set([...explicit, ...detected])];
+    // Only return docs that exist in postCallDocs (filter out stale/invalid keys)
+    return selectedLead.requestedDocs.filter(k => k in postCallDocs);
   };
 
-  // Email can only be sent when: no missing fields + all requested docs are done
+  // Email can only be sent when: no missing fields + all requested docs are done + at least one doc is ready_to_send
   const canSendEmail = (): boolean => {
     if (!selectedLead) return false;
     if (selectedLead.missingFields.length > 0) return false;
     const requested = getEffectiveRequestedDocs();
-    return requested.every((d) => isDocDone(d));
+    if (!requested.every((d) => isDocDone(d))) return false;
+    // Approval workflow gate: only when documents were explicitly requested AND generated
+    const dbDocs = leadDbDocs[selectedLead.id] || [];
+    if (requested.length > 0 && dbDocs.length > 0) {
+      // Block if any generated doc still awaits Finance or Legal approval
+      const pendingApproval = dbDocs.filter((d) =>
+        d.approval_status &&
+        d.approval_status !== "ready_to_send" &&
+        d.approval_status !== "sent"
+      );
+      if (pendingApproval.length > 0) return false;
+    }
+    return true;
   };
 
   const fieldLabels: Record<string, string> = {
@@ -1360,6 +1575,62 @@ export default function LeadsDashboard() {
       if (sortBy === "followUp") return (a.followUpDate || "9999").localeCompare(b.followUpDate || "9999");
       return 0; // default: server order (newest first)
     });
+
+  // ─── Calendar OAuth Handler ───
+  const handleCalendarConnect = async (providerName: string) => {
+    let provider: "google" | "microsoft" | null = null;
+    if (providerName === "Google Calendar") provider = "google";
+    else if (providerName === "Microsoft Outlook") provider = "microsoft";
+
+    if (!provider) {
+      // Apple Calendar — just show ICS info
+      setCalendarConnected(providerName);
+      toast("success", "Calendar set", "Use the .ics download when scheduling demos.");
+      return;
+    }
+
+    setCalendarConnecting(true);
+    try {
+      const res = await fetch(`${API}/api/v1/calendar/auth/${provider}`, { headers: getHeaders(false) });
+      if (!res.ok) {
+        // OAuth not configured — fall back to deep link
+        setCalendarConnected(providerName + " (Deep Links)");
+        setCalendarConnecting(false);
+        toast("info", "Calendar linked (deep links)", "OAuth not configured. Use 'Add to Calendar' links when scheduling.");
+        return;
+      }
+      const data = await res.json();
+      // Open OAuth popup
+      const popup = window.open(data.url, "calendar_oauth", "width=500,height=600,scrollbars=yes");
+
+      // Poll for completion
+      const interval = setInterval(async () => {
+        try {
+          const statusRes = await fetch(`${API}/api/v1/calendar/status`, { headers: getHeaders(false) });
+          if (statusRes.ok) {
+            const status = await statusRes.json();
+            if (status.connected_providers?.includes(provider)) {
+              clearInterval(interval);
+              popup?.close();
+              setCalendarConnected(providerName);
+              setCalendarConnecting(false);
+              toast("success", "Calendar connected", `${providerName} is now syncing.`);
+            }
+          }
+        } catch { /* ignore */ }
+      }, 2000);
+
+      // Safety timeout after 5 minutes
+      setTimeout(() => {
+        clearInterval(interval);
+        if (calendarConnecting) setCalendarConnecting(false);
+      }, 5 * 60 * 1000);
+
+    } catch {
+      setCalendarConnecting(false);
+      toast("error", "Connection failed", "Could not connect to calendar service.");
+    }
+  };
 
   return (
     <div className="flex flex-col h-full w-full">
@@ -1404,13 +1675,29 @@ export default function LeadsDashboard() {
                 </Button>
                 <p className="text-xs text-zinc-600 ml-1 shrink-0">{filteredLeads.length}/{leads.length}</p>
               </div>
-              <Button
-                size="sm"
-                className="bg-indigo-600 hover:bg-indigo-700 text-white h-7 text-xs gap-1.5 ml-2 shrink-0"
-                onClick={() => { setNewLeadForm(defaultNewLeadForm); setAddLeadErrors({}); setAddLeadOpen(true); }}
-              >
-                <UserPlus className="w-3.5 h-3.5" />Add Lead
-              </Button>
+              <div className="flex items-center gap-2 ml-2 shrink-0">
+                {/* Calendar Connect Button */}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className={`h-7 text-xs gap-1.5 border-zinc-800 transition-all ${
+                    calendarConnected
+                      ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20"
+                      : "bg-transparent text-zinc-400 hover:text-white hover:bg-zinc-800"
+                  }`}
+                  onClick={() => setCalendarOpen(true)}
+                >
+                  <Calendar className="w-3 h-3" />
+                  {calendarConnected ? `${calendarConnected} Connected` : "Connect Calendar"}
+                </Button>
+                <Button
+                  size="sm"
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white h-7 text-xs gap-1.5 shrink-0"
+                  onClick={() => { setNewLeadForm(defaultNewLeadForm); setAddLeadErrors({}); setAddLeadOpen(true); }}
+                >
+                  <UserPlus className="w-3.5 h-3.5" />Add Lead
+                </Button>
+              </div>
             </div>
             {/* Filter Panel */}
             {filterPanelOpen && (
@@ -1694,7 +1981,23 @@ export default function LeadsDashboard() {
                   <Button
                     variant="outline"
                     className="h-10 border-zinc-800 bg-zinc-900/80 hover:bg-zinc-800 hover:border-zinc-700 text-zinc-400 hover:text-white text-[11px] font-semibold"
-                    onClick={() => { }} // Download PPT logic
+                    onClick={async () => {
+                      try {
+                        const res = await fetch(`${API}/api/v1/precall/${selectedLead.id}`, { headers: getHeaders(false) });
+                        if (res.ok) {
+                          const data = await res.json();
+                          if (data.ppt_path) {
+                            window.open(`${API}/api/v1/documents/${encodeURIComponent(data.ppt_path.split("/").pop())}/download`, "_blank");
+                          } else {
+                            toast("info", "No Pre-Call Deck", "No deck has been generated for this lead yet.");
+                          }
+                        } else {
+                          toast("info", "No Pre-Call Deck", "No deck has been generated for this lead yet.");
+                        }
+                      } catch {
+                        toast("error", "Error", "Could not load pre-call deck.");
+                      }
+                    }}
                   >
                     <Presentation className="w-3.5 h-3.5 mr-2 text-indigo-400" />PRE-CALL DECK
                   </Button>
@@ -1706,6 +2009,24 @@ export default function LeadsDashboard() {
                     <ExternalLink className="w-3.5 h-3.5 mr-2 text-indigo-400" />BUBBLES REC
                   </Button>
                 </div>
+                {/* Schedule / Reschedule Demo button */}
+                <Button
+                  variant="outline"
+                  className="w-full h-9 border-violet-800/50 bg-violet-900/10 hover:bg-violet-800/20 hover:border-violet-700/60 text-violet-400 hover:text-violet-300 text-[11px] font-semibold gap-1.5"
+                  onClick={() => {
+                    setRescheduleMode("schedule");
+                    setRescheduleLeadId(selectedLead.id);
+                    setRescheduleDate(selectedLead.demoTime ? selectedLead.demoTime.substring(0, 16) : "");
+                    setRescheduleNewLink(selectedLead.teamsLink || "");
+                    setRescheduleCc("");
+                    setRescheduleEnableTeams(false);
+                    setRescheduleSendEmail(true);
+                    setRescheduleOpen(true);
+                  }}
+                >
+                  <Calendar className="w-3.5 h-3.5" />
+                  {selectedLead.demoTime ? "Reschedule / Update Booking" : "Schedule Demo"}
+                </Button>
               </div>
             </div>
 
@@ -1801,7 +2122,7 @@ export default function LeadsDashboard() {
                           try {
                             await fetch(`${API}/api/v1/leads/${selectedLead.id}`, {
                               method: "PUT",
-                              headers: { "Content-Type": "application/json" },
+                              headers: getHeaders(),
                               body: JSON.stringify({ email: selectedLead.email, custom_field_values: newVals }),
                             });
                           } catch { /* silent */ }
@@ -1903,6 +2224,80 @@ export default function LeadsDashboard() {
                       </div>
                     );
                   })}
+                </div>
+              )}
+
+              {/* ── Analyze with AI (Gemini) ── */}
+              {(selectedLead.transcript || selectedLead.summary || selectedLead.actionItems) && (
+                <div className="mt-3 pt-3 border-t border-zinc-800/40">
+                  {aiAnalysis[selectedLead.id] ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Wand2 className="w-3.5 h-3.5 text-indigo-400" />
+                        <span className="text-xs font-semibold text-indigo-300">AI Analysis</span>
+                        {aiAnalysis[selectedLead.id].lead_temperature && (
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                            aiAnalysis[selectedLead.id].lead_temperature === "HOT" ? "bg-rose-500/20 text-rose-400" :
+                            aiAnalysis[selectedLead.id].lead_temperature === "WARM" ? "bg-amber-500/20 text-amber-400" :
+                            "bg-sky-500/20 text-sky-400"
+                          }`}>{aiAnalysis[selectedLead.id].lead_temperature}</span>
+                        )}
+                        {aiAnalysis[selectedLead.id].call_outcome && (
+                          <span className="text-[10px] text-zinc-500 capitalize">{aiAnalysis[selectedLead.id].call_outcome?.replace(/_/g, " ")}</span>
+                        )}
+                        <button
+                          onClick={async () => {
+                            setAiAnalyzing(true);
+                            try {
+                              const res = await fetch(`${API}/api/v1/leads/${selectedLead.id}/analyze-transcript`, { method: "POST", headers: getHeaders() });
+                              if (res.ok) { const d = await res.json(); setAiAnalysis(prev => ({ ...prev, [selectedLead.id]: d })); toast("success", "Re-analyzed", "AI analysis updated."); }
+                            } catch { toast("error", "Error", "Re-analysis failed."); }
+                            finally { setAiAnalyzing(false); }
+                          }}
+                          className="ml-auto text-[10px] text-zinc-600 hover:text-indigo-400 transition-colors flex items-center gap-1"
+                        >
+                          <RefreshCw className={`w-3 h-3 ${aiAnalyzing ? "animate-spin" : ""}`} />Re-analyze
+                        </button>
+                      </div>
+                      {aiAnalysis[selectedLead.id].call_insights && (
+                        <p className="text-[11px] text-zinc-400 leading-relaxed bg-zinc-900/60 rounded-lg p-2.5 border border-zinc-800/50">
+                          {aiAnalysis[selectedLead.id].call_insights}
+                        </p>
+                      )}
+                      {aiAnalysis[selectedLead.id].documents_needed?.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 items-center">
+                          <span className="text-[10px] text-zinc-500 font-medium">Suggested docs:</span>
+                          {aiAnalysis[selectedLead.id].documents_needed.map((doc: string) => (
+                            <span key={doc} className="text-[10px] px-2 py-0.5 bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 rounded-full font-medium capitalize">{doc.replace(/_/g, " ")}</span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <Button
+                      size="sm"
+                      className="h-8 w-full text-xs font-semibold bg-indigo-600/15 hover:bg-indigo-600/25 text-indigo-300 border border-indigo-500/20 hover:border-indigo-500/40 shadow-none"
+                      onClick={async () => {
+                        setAiAnalyzing(true);
+                        try {
+                          const res = await fetch(`${API}/api/v1/leads/${selectedLead.id}/analyze-transcript`, { method: "POST", headers: getHeaders() });
+                          if (!res.ok) throw new Error(await res.text());
+                          const data = await res.json();
+                          setAiAnalysis(prev => ({ ...prev, [selectedLead.id]: data }));
+                          if (data.lead_temperature && ["HOT","WARM","COLD"].includes(data.lead_temperature)) {
+                            setLeads(prev => prev.map(l => l.id === selectedLead.id ? { ...l, leadStatus: data.lead_temperature } : l));
+                          }
+                          toast("success", "Analyzed", "AI extracted key info from the transcript.");
+                        } catch { toast("error", "Analysis Failed", "Could not analyze. Check API keys."); }
+                        finally { setAiAnalyzing(false); }
+                      }}
+                      disabled={aiAnalyzing}
+                    >
+                      {aiAnalyzing
+                        ? <><Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />Analyzing…</>
+                        : <><Wand2 className="w-3.5 h-3.5 mr-2" />Analyze with AI</>}
+                    </Button>
+                  )}
                 </div>
               )}
             </div>
@@ -2109,7 +2504,23 @@ export default function LeadsDashboard() {
                             {/* Action button per doc type */}
                             {done ? (
                               <div className="flex gap-1">
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-white hover:bg-zinc-800/50 rounded-full transition-all"><Eye className="h-4 w-4" /></Button>
+                                <Button
+                                  variant="ghost" size="icon"
+                                  className="h-8 w-8 text-zinc-500 hover:text-indigo-400 hover:bg-indigo-500/10 rounded-full transition-all"
+                                  title="View document"
+                                  onClick={() => {
+                                    if (!downloadUrl) return;
+                                    const dbDoc = (leadDbDocs[selectedLead.id] || []).find(d => d.type === docKey);
+                                    const viewerUrl = dbDoc?.view_url
+                                      ? (dbDoc.view_url.startsWith("http") ? dbDoc.view_url : `${API}${dbDoc.view_url}`)
+                                      : toViewUrl(downloadUrl);
+                                    const viewerFilename = dbDoc?.pdf_filename || dbDoc?.filename || downloadUrl.replace(/\/download$/, "").split("/").pop() || "document";
+                                    openDocViewer(viewerUrl, viewerFilename);
+                                  }}
+                                  disabled={!downloadUrl}
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
                                 {downloadUrl ? (
                                   <a href={downloadUrl} download>
                                     <Button variant="ghost" size="icon" className="h-8 w-8 text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-full transition-all" title="Download">
@@ -2180,20 +2591,79 @@ export default function LeadsDashboard() {
                   <div className="space-y-1.5">
                     {dbDocs.map((doc) => {
                       const dlUrl = `${API}${doc.download_url}`;
+                      const viewUrl = doc.view_url
+                        ? (doc.view_url.startsWith("http") ? doc.view_url : `${API}${doc.view_url}`)
+                        : toViewUrl(dlUrl);
                       return (
                         <div key={doc.id} className="flex items-center justify-between bg-zinc-900/60 px-3 py-2 rounded-lg border border-zinc-800/40">
                           <div className="flex items-center gap-2 min-w-0">
                             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                             <div className="min-w-0">
                               <p className="text-[12px] text-zinc-200 font-medium truncate">{postCallDocs[doc.type]?.label ?? doc.type}</p>
-                              {doc.created_at && <p className="text-[10px] text-zinc-600">{new Date(doc.created_at).toLocaleDateString()}</p>}
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                {doc.created_at && <p className="text-[10px] text-zinc-600">{new Date(doc.created_at).toLocaleDateString()}</p>}
+                                {doc.approval_status && (
+                                  <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
+                                    doc.approval_status === "ready_to_send" ? "bg-emerald-500/15 text-emerald-400" :
+                                    doc.approval_status === "pending_tl" ? "bg-indigo-500/15 text-indigo-400" :
+                                    doc.approval_status === "pending_legal" ? "bg-violet-500/15 text-violet-400" :
+                                    doc.approval_status === "pending_finance" ? "bg-amber-500/15 text-amber-400" :
+                                    doc.approval_status === "pending_marketing" ? "bg-fuchsia-500/15 text-fuchsia-400" :
+                                    doc.approval_status === "pending_admin" ? "bg-cyan-500/15 text-cyan-400" :
+                                    doc.approval_status?.startsWith("rejected") ? "bg-rose-500/15 text-rose-400" :
+                                    "bg-zinc-700/50 text-zinc-500"
+                                  }`}>
+                                    {doc.approval_status === "ready_to_send" ? "Approved — Ready to Send" :
+                                     doc.approval_status === "pending_tl" ? "Awaiting TL Review" :
+                                     doc.approval_status === "pending_legal" ? "Awaiting Legal Review" :
+                                     doc.approval_status === "pending_finance" ? "Awaiting Finance Review" :
+                                     doc.approval_status === "pending_marketing" ? "Awaiting Marketing Review" :
+                                     doc.approval_status === "pending_admin" ? "Awaiting Admin Approval" :
+                                     doc.approval_status === "rejected_tl" ? "Rejected by Team Lead" :
+                                     doc.approval_status === "rejected_legal" ? "Rejected by Legal" :
+                                     doc.approval_status === "rejected_finance" ? "Rejected by Finance" :
+                                     doc.approval_status === "rejected_marketing" ? "Rejected by Marketing" :
+                                     doc.approval_status === "rejected_admin" ? "Rejected by Admin" :
+                                     doc.approval_status}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
-                          <a href={dlUrl} download target="_blank" rel="noreferrer">
-                            <Button size="sm" className="h-7 text-xs bg-emerald-700 hover:bg-emerald-600 text-white font-semibold px-3 shrink-0">
-                              <Download className="w-3 h-3 mr-1" />Download
+                          <div className="flex gap-1.5 shrink-0">
+                            <Button
+                              size="sm"
+                              className="h-7 text-xs bg-indigo-700 hover:bg-indigo-600 text-white font-semibold px-3"
+                              onClick={() => openDocViewer(viewUrl, doc.pdf_filename || doc.filename || doc.type)}
+                            >
+                              <Eye className="w-3 h-3 mr-1" />View
                             </Button>
-                          </a>
+                            <a href={dlUrl} download target="_blank" rel="noreferrer">
+                              <Button size="sm" className="h-7 text-xs bg-emerald-700 hover:bg-emerald-600 text-white font-semibold px-3 shrink-0">
+                                <Download className="w-3 h-3 mr-1" />Download
+                              </Button>
+                            </a>
+                            {doc.approval_status?.startsWith("rejected") && (
+                              <Button
+                                size="sm"
+                                className="h-7 text-xs bg-rose-900/60 hover:bg-rose-800/60 text-rose-300 border border-rose-500/20 font-semibold px-3"
+                                onClick={() => {
+                                  const storedFields = JSON.parse(
+                                    localStorage.getItem(`doc-fields-${doc.id}`) ||
+                                    localStorage.getItem(`lead-${selectedLead?.id}-doc-${doc.type}`) ||
+                                    "{}"
+                                  );
+                                  setRegenDoc(doc);
+                                  setRegenFields(storedFields);
+                                  setRegenTemplateName(doc.filename || "");
+                                  setRegenOpen(true);
+                                  setGenDocType(doc.type || "contract");
+                                }}
+                              >
+                                <Wand2 className="w-3 h-3 mr-1" />Regenerate
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       );
                     })}
@@ -2203,11 +2673,20 @@ export default function LeadsDashboard() {
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                           <p className="text-[12px] text-zinc-200 font-medium">{postCallDocs[docKey]?.label ?? docKey}</p>
                         </div>
-                        <a href={url} download>
-                          <Button size="sm" className="h-7 text-xs bg-emerald-700 hover:bg-emerald-600 text-white font-semibold px-3">
-                            <Download className="w-3 h-3 mr-1" />Download
+                        <div className="flex gap-1.5 shrink-0">
+                          <Button
+                            size="sm"
+                            className="h-7 text-xs bg-indigo-700 hover:bg-indigo-600 text-white font-semibold px-3"
+                            onClick={() => openDocViewer(toViewUrl(url), url.replace(/\/download$/, "").split("/").pop() || docKey)}
+                          >
+                            <Eye className="w-3 h-3 mr-1" />View
                           </Button>
-                        </a>
+                          <a href={url} download>
+                            <Button size="sm" className="h-7 text-xs bg-emerald-700 hover:bg-emerald-600 text-white font-semibold px-3">
+                              <Download className="w-3 h-3 mr-1" />Download
+                            </Button>
+                          </a>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -2222,7 +2701,13 @@ export default function LeadsDashboard() {
                   <AlertCircle className="w-3 h-3 shrink-0" />
                   {selectedLead.missingFields.length > 0
                     ? "Fill all missing client info before sending."
-                    : "Generate all requested documents before sending."}
+                    : (() => {
+                        const dbDocs = leadDbDocs[selectedLead.id] || [];
+                        const reqDocs = getEffectiveRequestedDocs();
+                        const hasPending = dbDocs.some((d) => d.approval_status && d.approval_status !== "ready_to_send" && d.approval_status !== "sent");
+                        if (reqDocs.length > 0 && dbDocs.length > 0 && hasPending) return "Documents pending Finance & Legal approval before sending.";
+                        return "Generate all requested documents before sending.";
+                      })()}
                 </p>
               )}
               <Button
@@ -2323,6 +2808,82 @@ export default function LeadsDashboard() {
 
       {/* ════════════════ DIALOGS ════════════════ */}
 
+      {/* Calendar Connection Dialog */}
+      <Dialog open={calendarOpen} onOpenChange={(v) => { setCalendarOpen(v); setCalendarConnecting(false); }}>
+        <DialogContent className="bg-[#111] border-zinc-800 text-white max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-white flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-indigo-400" />
+              {calendarConnected ? "Calendar Connected" : "Connect Your Calendar"}
+            </DialogTitle>
+            <DialogDescription className="text-zinc-400">
+              {calendarConnected
+                ? `Your ${calendarConnected} calendar is connected. Demo times and follow-up reminders will sync automatically.`
+                : "Connect a calendar to sync demo schedules, set follow-up reminders, and never miss a meeting."}
+            </DialogDescription>
+          </DialogHeader>
+
+          {calendarConnected ? (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 p-4 bg-emerald-500/8 border border-emerald-500/20 rounded-xl">
+                <div className="w-10 h-10 rounded-full bg-emerald-500/15 flex items-center justify-center shrink-0">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-emerald-400">{calendarConnected} Connected</p>
+                  <p className="text-xs text-zinc-500 mt-0.5">Syncing demos and follow-up reminders</p>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <p className="text-xs text-zinc-500 font-semibold uppercase tracking-wider">Active Sync</p>
+                {["Demo scheduling", "Follow-up reminders", "Meeting prep alerts (30 min before)"].map((item) => (
+                  <div key={item} className="flex items-center gap-2 text-xs text-zinc-400">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                    {item}
+                  </div>
+                ))}
+              </div>
+              <DialogFooter>
+                <Button variant="outline" className="border-zinc-700 text-zinc-300 hover:border-rose-500/40 hover:text-rose-400"
+                  onClick={() => { setCalendarConnected(null); toast("info", "Calendar disconnected", "Your calendar has been unlinked."); setCalendarOpen(false); }}>
+                  Disconnect
+                </Button>
+                <Button className="bg-indigo-600 hover:bg-indigo-700" onClick={() => setCalendarOpen(false)}>Done</Button>
+              </DialogFooter>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {[
+                { name: "Google Calendar", color: "text-[#4285F4]", bg: "bg-[#4285F4]/10 border-[#4285F4]/25 hover:border-[#4285F4]/50", dot: "bg-[#4285F4]", desc: "Gmail / Google Workspace" },
+                { name: "Microsoft Outlook", color: "text-[#0078D4]", bg: "bg-[#0078D4]/10 border-[#0078D4]/25 hover:border-[#0078D4]/50", dot: "bg-[#0078D4]", desc: "Office 365 / Outlook.com" },
+                { name: "Apple Calendar", color: "text-zinc-200", bg: "bg-zinc-800/60 border-zinc-700 hover:border-zinc-600", dot: "bg-zinc-400", desc: "iCloud / macOS Calendar" },
+              ].map((provider) => (
+                <button
+                  key={provider.name}
+                  disabled={calendarConnecting}
+                  onClick={() => handleCalendarConnect(provider.name)}
+                  className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all ${provider.bg} ${calendarConnecting ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                >
+                  <div className={`w-2.5 h-2.5 rounded-full ${provider.dot} shrink-0`} />
+                  <div className="text-left flex-1">
+                    <p className={`text-sm font-semibold ${provider.color}`}>{provider.name}</p>
+                    <p className="text-xs text-zinc-500 mt-0.5">{provider.desc}</p>
+                  </div>
+                  {calendarConnecting ? (
+                    <div className="w-4 h-4 border-2 border-zinc-600 border-t-zinc-300 rounded-full animate-spin shrink-0" />
+                  ) : (
+                    <Link2 className="w-4 h-4 text-zinc-600 shrink-0" />
+                  )}
+                </button>
+              ))}
+              <p className="text-[11px] text-zinc-600 text-center pt-1">
+                Connecting grants read/write access to create events for demos and reminders.
+              </p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Upload Dialog */}
       <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
         <DialogContent className="bg-[#111] border-zinc-800 text-white max-w-md">
@@ -2358,7 +2919,7 @@ export default function LeadsDashboard() {
       </Dialog>
 
       {/* Generate Documents Dialog — With All Required Fields + Template Engine */}
-      <Dialog open={genDocsOpen} onOpenChange={(v) => { setGenDocsOpen(v); if (!v) { setGenDocFieldValues({}); setGenDownloadUrl(null); setGenIsGenerating(false); } }}>
+      <Dialog open={genDocsOpen} onOpenChange={(v) => { setGenDocsOpen(v); if (!v) { setGenDocFieldValues({}); setGenDownloadUrl(null); setGenViewUrl(null); setGenIsGenerating(false); } }}>
         <DialogContent className="bg-[#111] border-zinc-800 text-white max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-white flex items-center gap-2">
@@ -2488,7 +3049,36 @@ export default function LeadsDashboard() {
               if (!fields.length) return null;
               return (
                 <div>
-                  <Label className="text-zinc-400 text-[11px] uppercase tracking-wider font-semibold mb-2 block">Document Variables</Label>
+                  <div className="flex items-center justify-between mb-2">
+                    <Label className="text-zinc-400 text-[11px] uppercase tracking-wider font-semibold">Document Variables</Label>
+                    {selectedLead && aiAnalysis[selectedLead.id] && (
+                      <button
+                        type="button"
+                        disabled={genPrefilling}
+                        onClick={async () => {
+                          if (!selectedLead) return;
+                          setGenPrefilling(true);
+                          try {
+                            const res = await fetch(`${API}/api/v1/leads/${selectedLead.id}/prefill-document`, {
+                              method: "POST",
+                              headers: getHeaders(),
+                              body: JSON.stringify({ doc_type: genDocType, template_name: genTemplateName }),
+                            });
+                            if (!res.ok) throw new Error();
+                            const data = await res.json();
+                            if (data.fields) setGenDocFieldValues(prev => ({ ...prev, ...data.fields }));
+                            toast("success", "Fields Pre-filled", "AI has populated the document fields from the transcript.");
+                          } catch { toast("error", "Pre-fill Failed", "Could not auto-fill fields."); }
+                          finally { setGenPrefilling(false); }
+                        }}
+                        className="flex items-center gap-1.5 text-[10px] font-semibold text-indigo-400 hover:text-indigo-300 border border-indigo-500/20 hover:border-indigo-500/40 bg-indigo-500/5 hover:bg-indigo-500/10 px-2.5 py-1 rounded-lg transition-all disabled:opacity-50"
+                      >
+                        {genPrefilling
+                          ? <><Loader2 className="w-3 h-3 animate-spin" />Filling…</>
+                          : <><Sparkles className="w-3 h-3" />Auto-fill with AI</>}
+                      </button>
+                    )}
+                  </div>
                   <div className="space-y-2.5">
                     {fields.map((field: string) => (
                       <div key={field}>
@@ -2518,17 +3108,28 @@ export default function LeadsDashboard() {
                 <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
                 <div className="flex-1">
                   <p className="text-[12px] font-semibold text-emerald-400">Document generated successfully!</p>
-                  <p className="text-[11px] text-zinc-500">Ready to download</p>
+                  <p className="text-[11px] text-zinc-500">Ready to view or download</p>
                 </div>
-                <a href={genDownloadUrl} download>
-                  <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white h-8 text-xs font-semibold px-4">
-                    <Download className="w-3.5 h-3.5 mr-1.5" />Download
-                  </Button>
-                </a>
+                <div className="flex gap-2 shrink-0">
+                  {genViewUrl && (
+                    <Button
+                      size="sm"
+                      className="h-8 text-xs font-semibold px-3 bg-indigo-600 hover:bg-indigo-700 text-white"
+                      onClick={() => openDocViewer(genViewUrl, genDownloadUrl.replace(/\/download$/, "").split("/").pop() || "document")}
+                    >
+                      <Eye className="w-3.5 h-3.5 mr-1.5" />View
+                    </Button>
+                  )}
+                  <a href={genDownloadUrl} download>
+                    <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white h-8 text-xs font-semibold px-4">
+                      <Download className="w-3.5 h-3.5 mr-1.5" />Download
+                    </Button>
+                  </a>
+                </div>
               </div>
             )}
             <div className="flex gap-2 w-full justify-end">
-              <Button variant="outline" className="border-zinc-700 text-zinc-300" onClick={() => { setGenDocsOpen(false); setGenDocFieldValues({}); setGenDownloadUrl(null); }}>
+              <Button variant="outline" className="border-zinc-700 text-zinc-300" onClick={() => { setGenDocsOpen(false); setGenDocFieldValues({}); setGenDownloadUrl(null); setGenViewUrl(null); }}>
                 {genDownloadUrl ? "Close" : "Cancel"}
               </Button>
               {!genDownloadUrl && (
@@ -2551,9 +3152,12 @@ export default function LeadsDashboard() {
 
       {/* Email Draft Dialog */}
       <Dialog open={emailOpen} onOpenChange={setEmailOpen}>
-        <DialogContent className="bg-[#111] border-zinc-800 text-white max-w-2xl">
+        <DialogContent className="bg-[#111] border-zinc-800 text-white max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-white">Draft Email</DialogTitle>
+            <DialogTitle className="text-white flex items-center gap-2">
+                Draft Email
+                {emailDrafting && <span className="flex items-center gap-1.5 text-xs font-normal text-indigo-400 border border-indigo-500/20 px-2 py-0.5 rounded-full bg-indigo-500/5"><Loader2 className="w-3 h-3 animate-spin" />AI drafting…</span>}
+              </DialogTitle>
             <DialogDescription className="text-zinc-400">Compose and send follow-up email with attached documents.</DialogDescription>
           </DialogHeader>
           {emailSent ? (
@@ -2597,6 +3201,7 @@ export default function LeadsDashboard() {
                   : selectedLead.generatedDocs.map((k) => ({
                       id: 0, type: k, filename: k,
                       download_url: docDownloadUrls[`${selectedLead.id}_${k}`] || "",
+                      view_url: null as string | null,
                       status: "generated", created_at: "",
                     }));
                 if (docsToShow.length === 0) return null;
@@ -2604,24 +3209,44 @@ export default function LeadsDashboard() {
                   <div>
                     <Label className="text-zinc-400 text-xs uppercase tracking-wider">Attachments</Label>
                     <div className="mt-2 space-y-1">
-                      {docsToShow.map((doc, i) => (
-                        <div key={i} className="flex items-center justify-between bg-zinc-900/60 p-2 rounded-lg border border-zinc-800/50">
-                          <div className="flex items-center gap-2">
-                            <FileText className="w-4 h-4 text-indigo-400" />
-                            <span className="text-xs text-zinc-300">
-                              {postCallDocs[doc.type]?.label ?? doc.type}
-                              {doc.type === "brochure" ? " (PDF)" : doc.type === "sample_list" ? " (CSV)" : ".docx"}
-                            </span>
+                      {docsToShow.map((doc, i) => {
+                        const absDownload = doc.download_url.startsWith("http") ? doc.download_url : `${API}${doc.download_url}`;
+                        const absView = doc.view_url
+                          ? (doc.view_url.startsWith("http") ? doc.view_url : `${API}${doc.view_url}`)
+                          : toViewUrl(absDownload);
+                        return (
+                          <div key={i} className="flex items-center justify-between bg-zinc-900/60 p-2 rounded-lg border border-zinc-800/50">
+                            <div className="flex items-center gap-2">
+                              <FileText className="w-4 h-4 text-indigo-400" />
+                              <span className="text-xs text-zinc-300">
+                                {postCallDocs[doc.type]?.label ?? doc.type}
+                                {doc.view_url?.includes('.pdf') ? " (PDF)" : doc.type === "brochure" ? " (PDF)" : doc.type === "sample_list" ? " (CSV)" : " (DOCX)"}
+                              </span>
+                            </div>
+                            {doc.download_url && (
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  variant="ghost" size="icon"
+                                  className="h-7 w-7 text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10"
+                                  title="View document"
+                                  onClick={() => {
+                                    // Extract actual filename from the view URL so the viewer detects PDF correctly
+                                    const viewFilename = absView.match(/\/documents\/([^/]+)\/view/)?.[1] || doc.filename || doc.type;
+                                    openDocViewer(absView, viewFilename);
+                                  }}
+                                >
+                                  <Eye className="h-3.5 w-3.5" />
+                                </Button>
+                                <a href={absDownload} download target="_blank" rel="noreferrer">
+                                  <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-500 hover:text-emerald-400">
+                                    <Download className="h-3.5 w-3.5" />
+                                  </Button>
+                                </a>
+                              </div>
+                            )}
                           </div>
-                          {doc.download_url && (
-                            <a href={doc.download_url.startsWith("http") ? doc.download_url : `${API}${doc.download_url}`} download target="_blank" rel="noreferrer">
-                              <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-500 hover:text-emerald-400">
-                                <Download className="h-3.5 w-3.5" />
-                              </Button>
-                            </a>
-                          )}
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 );
@@ -2674,30 +3299,85 @@ export default function LeadsDashboard() {
         </DialogContent>
       </Dialog>
 
-      {/* ─── Reschedule Demo Dialog ─── */}
+      {/* ─── Reschedule / Schedule Demo Dialog ─── */}
       <Dialog open={rescheduleOpen} onOpenChange={(v) => { if (!rescheduleIsLoading) setRescheduleOpen(v); }}>
         <DialogContent className="bg-[#111] border-zinc-800 text-white max-w-md">
           <DialogHeader>
             <DialogTitle className="text-white flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-violet-400" />Reschedule Demo
+              <Calendar className="w-5 h-5 text-violet-400" />
+              {rescheduleMode === "schedule" ? "Schedule Demo" : "Reschedule Demo"}
             </DialogTitle>
             <DialogDescription className="text-zinc-400">
-              Select a new date &amp; time. A booking confirmation email will be sent to the client.
+              {rescheduleMode === "schedule"
+                ? "Set a date & time and optionally create a Teams meeting."
+                : "Select a new date & time. A booking confirmation email can be sent to the client."}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-1">
             <div>
-              <Label className="text-zinc-400 text-xs uppercase tracking-wider block mb-1.5">New Demo Date &amp; Time <span className="text-rose-400">*</span></Label>
+              <Label className="text-zinc-400 text-xs uppercase tracking-wider block mb-1.5">Demo Date &amp; Time <span className="text-rose-400">*</span></Label>
               <input
                 type="datetime-local"
                 value={rescheduleDate}
-                onChange={(e) => setRescheduleDate(e.target.value)}
+                onChange={(e) => {
+                  setRescheduleDate(e.target.value);
+                  // Auto-refresh Teams URL when date changes and Teams toggle is on
+                  if (rescheduleEnableTeams && e.target.value) {
+                    const lead = leads.find(l => l.id === rescheduleLeadId);
+                    setRescheduleNewLink(generateTeamsUrl(`Demo — ${lead?.company || ""}`, e.target.value));
+                  }
+                }}
                 className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-violet-500 transition-all [color-scheme:dark]"
                 style={{ colorScheme: "dark" }}
               />
             </div>
+
+            {/* Enable Teams Meeting Toggle */}
+            <div className="flex items-center justify-between p-3 rounded-xl border border-zinc-800/60 bg-zinc-900/30">
+              <div className="flex items-center gap-2.5">
+                <Video className="w-4 h-4 text-indigo-400" />
+                <div>
+                  <p className="text-sm font-semibold text-white">Enable Teams Meeting</p>
+                  <p className="text-[11px] text-zinc-500 mt-0.5">Generates a Teams meeting creation link</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const next = !rescheduleEnableTeams;
+                  setRescheduleEnableTeams(next);
+                  if (next && rescheduleDate) {
+                    const lead = leads.find(l => l.id === rescheduleLeadId);
+                    setRescheduleNewLink(generateTeamsUrl(`Demo — ${lead?.company || ""}`, rescheduleDate));
+                  } else if (!next) {
+                    const lead = leads.find(l => l.id === rescheduleLeadId);
+                    setRescheduleNewLink(lead?.teamsLink || "");
+                  }
+                }}
+                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${rescheduleEnableTeams ? "bg-indigo-600" : "bg-zinc-700"}`}
+              >
+                <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${rescheduleEnableTeams ? "translate-x-4" : "translate-x-0.5"}`} />
+              </button>
+            </div>
+
+            {rescheduleEnableTeams && rescheduleDate && (
+              <div className="p-2.5 rounded-lg bg-indigo-950/30 border border-indigo-800/30 flex items-start gap-2">
+                <Video className="w-3.5 h-3.5 text-indigo-400 mt-0.5 shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] text-indigo-400 font-bold uppercase tracking-wider mb-1">Teams Meeting Link</p>
+                  <p className="text-[10px] text-zinc-400 leading-relaxed break-all">{rescheduleNewLink}</p>
+                  <button
+                    onClick={() => window.open(rescheduleNewLink, "_blank")}
+                    className="mt-1.5 text-[10px] text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
+                  >
+                    <ExternalLink className="w-2.5 h-2.5" />Open in Teams to confirm meeting
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div>
-              <Label className="text-zinc-400 text-xs uppercase tracking-wider block mb-1.5">Teams Link <span className="text-zinc-600 normal-case">(update if changed)</span></Label>
+              <Label className="text-zinc-400 text-xs uppercase tracking-wider block mb-1.5">Teams Link <span className="text-zinc-600 normal-case">(paste your Teams join URL)</span></Label>
               <Input
                 value={rescheduleNewLink}
                 onChange={(e) => setRescheduleNewLink(e.target.value)}
@@ -2714,16 +3394,34 @@ export default function LeadsDashboard() {
                 className="bg-zinc-900 border-zinc-700 text-white"
               />
             </div>
-            {rescheduleLeadId && leads.find(l => l.id === rescheduleLeadId) && (
-              <div className="bg-zinc-900/60 rounded-lg border border-zinc-800/50 px-3 py-2.5">
-                <p className="text-[10px] text-zinc-500 font-semibold uppercase tracking-wider mb-1">Confirmation email to</p>
-                <p className="text-[12px] text-zinc-200">{leads.find(l => l.id === rescheduleLeadId)?.email}</p>
+
+            {/* Send booking confirmation email toggle */}
+            <div className="flex items-center justify-between p-3 rounded-xl border border-zinc-800/60 bg-zinc-900/30">
+              <div className="flex items-center gap-2.5">
+                <Mail className="w-4 h-4 text-emerald-400" />
+                <div>
+                  <p className="text-sm font-semibold text-white">Send Booking Confirmation</p>
+                  {rescheduleLeadId && leads.find(l => l.id === rescheduleLeadId) && (
+                    <p className="text-[11px] text-zinc-500 mt-0.5">to {leads.find(l => l.id === rescheduleLeadId)?.email}</p>
+                  )}
+                </div>
               </div>
-            )}
+              <button
+                type="button"
+                onClick={() => setRescheduleSendEmail(!rescheduleSendEmail)}
+                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${rescheduleSendEmail ? "bg-emerald-600" : "bg-zinc-700"}`}
+              >
+                <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${rescheduleSendEmail ? "translate-x-4" : "translate-x-0.5"}`} />
+              </button>
+            </div>
+
+            <p className="text-[10px] text-zinc-600 flex items-center gap-1.5">
+              <Calendar className="w-3 h-3" />A calendar invite (.ics) will be downloaded automatically after confirming.
+            </p>
           </div>
           <DialogFooter>
             <Button variant="outline" className="border-zinc-700 text-zinc-300" onClick={() => setRescheduleOpen(false)} disabled={rescheduleIsLoading}>
-              Skip
+              Cancel
             </Button>
             <Button
               className="bg-violet-600 hover:bg-violet-700 text-white font-semibold disabled:opacity-50"
@@ -2731,9 +3429,9 @@ export default function LeadsDashboard() {
               onClick={handleRescheduleConfirm}
             >
               {rescheduleIsLoading ? (
-                <><span className="animate-spin mr-2">⟳</span>Sending…</>
+                <><span className="animate-spin mr-2">⟳</span>Saving…</>
               ) : (
-                <><Send className="w-4 h-4 mr-2" />Confirm &amp; Send Email</>
+                <><Send className="w-4 h-4 mr-2" />{rescheduleMode === "schedule" ? "Schedule & Save" : "Confirm & Save"}</>
               )}
             </Button>
           </DialogFooter>
@@ -2774,10 +3472,12 @@ export default function LeadsDashboard() {
               onClick={async () => {
                 const selectedDocs = Object.entries(docSelectChecked).filter(([, v]) => v).map(([k]) => k);
                 if (docSelectLeadId) {
+                  // Map human-readable labels → internal postCallDocs keys using the lookup table
+                  const selectedDocKeys = [...new Set(selectedDocs.map(d => LABEL_TO_DOC_KEY[d]).filter((k): k is string => !!k))];
                   const updated = leads.map((l) =>
                     l.id === docSelectLeadId ? {
                       ...l,
-                      requestedDocs: [...new Set([...l.requestedDocs, ...selectedDocs.map(d => d.toLowerCase().replace(/ \+ /g, '_').replace(/ \/ /g, '_').replace(/ /g, '_'))])],
+                      requestedDocs: [...new Set([...l.requestedDocs, ...selectedDocKeys])],
                       selectedDocuments: [...new Set([...l.selectedDocuments, ...selectedDocs])],
                     } : l
                   );
@@ -2789,7 +3489,7 @@ export default function LeadsDashboard() {
                     try {
                       await fetch(`${API}/api/v1/leads/${docSelectLeadId}`, {
                         method: "PUT",
-                        headers: { "Content-Type": "application/json" },
+                        headers: getHeaders(),
                         body: JSON.stringify({
                           email: updatedLead.email,
                           requested_docs: updatedLead.requestedDocs,
@@ -2901,7 +3601,7 @@ export default function LeadsDashboard() {
                 try {
                   await fetch(`${API}/api/v1/leads/${selectedLead.id}`, {
                     method: "PUT",
-                    headers: { "Content-Type": "application/json" },
+                    headers: getHeaders(),
                     body: JSON.stringify({
                       email: selectedLead.email,
                       [dateEditField === "lastContact" ? "last_contact" : "follow_up_date"]: isoValue,
@@ -3360,28 +4060,120 @@ export default function LeadsDashboard() {
 
                   {/* Company Research */}
                   <div className="p-4 rounded-xl border border-zinc-800/60 bg-zinc-900/20">
-                    <h3 className="text-sm font-black text-white uppercase tracking-wider mb-3 flex items-center gap-2">
-                      <FileSearch className="w-4 h-4 text-sky-400" />Company Research
-                    </h3>
-                    <div className="space-y-2.5">
-                      <div className="flex gap-3 p-2.5 bg-zinc-900/60 rounded-lg border border-zinc-800/50">
-                        <Building className="w-3.5 h-3.5 text-zinc-500 mt-0.5 shrink-0" />
-                        <div>
-                          <p className="text-[10px] text-zinc-500 font-semibold uppercase tracking-wider mb-0.5">Industry & Size</p>
-                          <p className="text-[12px] text-zinc-200">{preCallLead.intel.industry || "—"}</p>
-                          <p className="text-[11px] text-zinc-500 mt-0.5">{preCallLead.intel.size || "—"}</p>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
+                        <FileSearch className="w-4 h-4 text-sky-400" />Company Research
+                      </h3>
+                      <button
+                        onClick={async () => {
+                          if (!preCallLead) return;
+                          setResearching(true);
+                          try {
+                            const res = await fetch(`${API}/api/v1/leads/${preCallLead.id}/research`, { method: "POST", headers: getHeaders() });
+                            if (!res.ok) throw new Error(await res.text());
+                            const data = await res.json();
+                            setResearchData(prev => ({ ...prev, [preCallLead.id]: data }));
+                            toast("success", "Research Complete", "Perplexity found company intel.");
+                          } catch { toast("error", "Research Failed", "Check PERPLEXITY_API_KEY in .env"); }
+                          finally { setResearching(false); }
+                        }}
+                        disabled={researching}
+                        className="flex items-center gap-1.5 text-[10px] font-semibold text-sky-400 hover:text-sky-300 border border-sky-500/20 hover:border-sky-500/40 bg-sky-500/5 px-2.5 py-1 rounded-lg transition-all disabled:opacity-50"
+                      >
+                        {researching ? <><Loader2 className="w-3 h-3 animate-spin" />Researching…</> : <><Sparkles className="w-3 h-3" />Research with AI</>}
+                      </button>
+                    </div>
+                    {researchData[preCallLead.id] && !researchData[preCallLead.id].parse_error ? (
+                      <div className="space-y-2.5">
+                        {researchData[preCallLead.id].overview && (
+                          <div className="p-2.5 bg-zinc-900/60 rounded-lg border border-zinc-800/50">
+                            <p className="text-[10px] text-zinc-500 font-semibold uppercase tracking-wider mb-1">Overview</p>
+                            <p className="text-[12px] text-zinc-300 leading-relaxed">{researchData[preCallLead.id].overview}</p>
+                          </div>
+                        )}
+                        <div className="grid grid-cols-2 gap-2">
+                          {researchData[preCallLead.id].industry && (
+                            <div className="p-2 bg-zinc-900/60 rounded-lg border border-zinc-800/50">
+                              <p className="text-[10px] text-zinc-500 font-semibold mb-0.5">Industry</p>
+                              <p className="text-[11px] text-zinc-200">{researchData[preCallLead.id].industry}</p>
+                            </div>
+                          )}
+                          {researchData[preCallLead.id].company_size && (
+                            <div className="p-2 bg-zinc-900/60 rounded-lg border border-zinc-800/50">
+                              <p className="text-[10px] text-zinc-500 font-semibold mb-0.5">Size</p>
+                              <p className="text-[11px] text-zinc-200">{researchData[preCallLead.id].company_size}</p>
+                            </div>
+                          )}
+                          {researchData[preCallLead.id].headquarters && (
+                            <div className="p-2 bg-zinc-900/60 rounded-lg border border-zinc-800/50">
+                              <p className="text-[10px] text-zinc-500 font-semibold mb-0.5">HQ</p>
+                              <p className="text-[11px] text-zinc-200">{researchData[preCallLead.id].headquarters}</p>
+                            </div>
+                          )}
+                          {researchData[preCallLead.id].funding_stage && (
+                            <div className="p-2 bg-zinc-900/60 rounded-lg border border-zinc-800/50">
+                              <p className="text-[10px] text-zinc-500 font-semibold mb-0.5">Funding</p>
+                              <p className="text-[11px] text-zinc-200">{researchData[preCallLead.id].funding_stage}</p>
+                            </div>
+                          )}
                         </div>
-                      </div>
-                      {preCallLead.intel.recentNews && (
-                        <div className="flex gap-3 p-2.5 bg-zinc-900/60 rounded-lg border border-zinc-800/50">
-                          <TrendingUp className="w-3.5 h-3.5 text-amber-400 mt-0.5 shrink-0" />
+                        {researchData[preCallLead.id].pain_points && (
+                          <div className="p-2.5 bg-amber-500/5 rounded-lg border border-amber-500/10">
+                            <p className="text-[10px] text-amber-400 font-semibold uppercase tracking-wider mb-1">Pain Points</p>
+                            <p className="text-[11px] text-zinc-300 leading-relaxed">{researchData[preCallLead.id].pain_points}</p>
+                          </div>
+                        )}
+                        {researchData[preCallLead.id].opportunities && (
+                          <div className="p-2.5 bg-emerald-500/5 rounded-lg border border-emerald-500/10">
+                            <p className="text-[10px] text-emerald-400 font-semibold uppercase tracking-wider mb-1">Opportunities</p>
+                            <p className="text-[11px] text-zinc-300 leading-relaxed">{researchData[preCallLead.id].opportunities}</p>
+                          </div>
+                        )}
+                        {researchData[preCallLead.id].recent_news?.length > 0 && (
                           <div>
-                            <p className="text-[10px] text-zinc-500 font-semibold uppercase tracking-wider mb-0.5">Recent News & Signal</p>
-                            <p className="text-[12px] text-zinc-300 leading-relaxed">&ldquo;{preCallLead.intel.recentNews}&rdquo;</p>
+                            <p className="text-[10px] text-zinc-500 font-semibold uppercase tracking-wider mb-1.5">Recent News</p>
+                            <div className="space-y-1.5">
+                              {researchData[preCallLead.id].recent_news.slice(0, 3).map((news: any, i: number) => (
+                                <div key={i} className="p-2 bg-zinc-900/60 rounded-lg border border-zinc-800/50">
+                                  <p className="text-[11px] text-zinc-200 font-medium">{news.title}</p>
+                                  {news.date && <p className="text-[10px] text-zinc-600 mt-0.5">{news.date}</p>}
+                                  {news.summary && <p className="text-[10px] text-zinc-400 mt-0.5">{news.summary}</p>}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {researchData[preCallLead.id].citations?.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5">
+                            {researchData[preCallLead.id].citations.slice(0, 5).map((url: string, i: number) => (
+                              <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-sky-500 hover:text-sky-400 underline">[{i + 1}]</a>
+                            ))}
+                            <span className="text-[10px] text-zinc-600">sources</span>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="space-y-2.5">
+                        <div className="flex gap-3 p-2.5 bg-zinc-900/60 rounded-lg border border-zinc-800/50">
+                          <Building className="w-3.5 h-3.5 text-zinc-500 mt-0.5 shrink-0" />
+                          <div>
+                            <p className="text-[10px] text-zinc-500 font-semibold uppercase tracking-wider mb-0.5">Industry & Size</p>
+                            <p className="text-[12px] text-zinc-200">{preCallLead.intel.industry || "—"}</p>
+                            <p className="text-[11px] text-zinc-500 mt-0.5">{preCallLead.intel.size || "—"}</p>
                           </div>
                         </div>
-                      )}
-                    </div>
+                        {preCallLead.intel.recentNews && (
+                          <div className="flex gap-3 p-2.5 bg-zinc-900/60 rounded-lg border border-zinc-800/50">
+                            <TrendingUp className="w-3.5 h-3.5 text-amber-400 mt-0.5 shrink-0" />
+                            <div>
+                              <p className="text-[10px] text-zinc-500 font-semibold uppercase tracking-wider mb-0.5">Recent News & Signal</p>
+                              <p className="text-[12px] text-zinc-300 leading-relaxed">&ldquo;{preCallLead.intel.recentNews}&rdquo;</p>
+                            </div>
+                          </div>
+                        )}
+                        <p className="text-[11px] text-zinc-600 text-center py-1">Click "Research with AI" to get live Perplexity intel</p>
+                      </div>
+                    )}
                   </div>
 
                   {/* Draft Proposal */}
@@ -3406,20 +4198,68 @@ export default function LeadsDashboard() {
                       <ShieldCheck className="w-4 h-4 text-emerald-400" />Pre-Call Checklist
                     </h3>
                     <div className="space-y-1.5">
-                      {[
-                        { label: "Teams meeting link ready", done: !!preCallLead.teamsLink },
-                        { label: "Pre-call deck / brochure downloaded", done: false },
-                        { label: "Company intel reviewed", done: !!preCallLead.intel.recentNews },
-                        { label: "KYC fields collected", done: preCallLead.missingFields.length === 0 },
-                        { label: "Bubbles recording enabled", done: !!preCallLead.bubblesLink },
-                      ].map(({ label, done }) => (
-                        <div key={label} className="flex items-center gap-2.5 py-1.5 px-2 rounded-lg">
-                          {done
-                            ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                            : <Circle className="w-3.5 h-3.5 text-zinc-700 shrink-0" />}
-                          <span className={`text-[12px] ${done ? "text-zinc-500 line-through" : "text-zinc-300"}`}>{label}</span>
-                        </div>
-                      ))}
+                      {/* Teams meeting link */}
+                      {(() => {
+                        const done = !!preCallLead.teamsLink;
+                        return (
+                          <div
+                            className={`flex items-center gap-2.5 py-1.5 px-2 rounded-lg ${done ? "cursor-pointer hover:bg-zinc-800/40 transition-colors group" : ""}`}
+                            onClick={() => done && window.open(preCallLead.teamsLink, "_blank")}
+                          >
+                            {done ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" /> : <Circle className="w-3.5 h-3.5 text-zinc-700 shrink-0" />}
+                            <span className={`text-[12px] flex-1 ${done ? "text-zinc-500 line-through" : "text-zinc-300"}`}>Teams meeting link ready</span>
+                            {done && <ExternalLink className="w-3 h-3 text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />}
+                          </div>
+                        );
+                      })()}
+
+                      {/* Pre-call deck */}
+                      {(() => {
+                        const done = false;
+                        return (
+                          <div className="flex items-center gap-2.5 py-1.5 px-2 rounded-lg">
+                            {done ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" /> : <Circle className="w-3.5 h-3.5 text-zinc-700 shrink-0" />}
+                            <span className={`text-[12px] flex-1 ${done ? "text-zinc-500 line-through" : "text-zinc-300"}`}>Pre-call deck / brochure downloaded</span>
+                          </div>
+                        );
+                      })()}
+
+                      {/* Company intel */}
+                      {(() => {
+                        const done = !!preCallLead.intel.recentNews;
+                        return (
+                          <div className="flex items-center gap-2.5 py-1.5 px-2 rounded-lg">
+                            {done ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" /> : <Circle className="w-3.5 h-3.5 text-zinc-700 shrink-0" />}
+                            <span className={`text-[12px] ${done ? "text-zinc-500 line-through" : "text-zinc-300"}`}>Company intel reviewed</span>
+                          </div>
+                        );
+                      })()}
+
+                      {/* KYC fields */}
+                      {(() => {
+                        const done = preCallLead.missingFields.length === 0;
+                        return (
+                          <div className="flex items-center gap-2.5 py-1.5 px-2 rounded-lg">
+                            {done ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" /> : <Circle className="w-3.5 h-3.5 text-zinc-700 shrink-0" />}
+                            <span className={`text-[12px] ${done ? "text-zinc-500 line-through" : "text-zinc-300"}`}>KYC fields collected</span>
+                          </div>
+                        );
+                      })()}
+
+                      {/* Bubbles recording */}
+                      {(() => {
+                        const done = !!preCallLead.bubblesLink;
+                        return (
+                          <div
+                            className={`flex items-center gap-2.5 py-1.5 px-2 rounded-lg ${done ? "cursor-pointer hover:bg-zinc-800/40 transition-colors group" : ""}`}
+                            onClick={() => done && window.open(preCallLead.bubblesLink, "_blank")}
+                          >
+                            {done ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" /> : <Circle className="w-3.5 h-3.5 text-zinc-700 shrink-0" />}
+                            <span className={`text-[12px] flex-1 ${done ? "text-zinc-500 line-through" : "text-zinc-300"}`}>Bubbles recording enabled</span>
+                            {done && <ExternalLink className="w-3 h-3 text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />}
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
 
@@ -3429,8 +4269,26 @@ export default function LeadsDashboard() {
                   <Button
                     className="flex-1 h-10 bg-indigo-600 hover:bg-indigo-500 text-white font-black text-sm rounded-xl"
                     onClick={() => { window.open(preCallLead.teamsLink, "_blank"); setPreCallOpen(false); }}
+                    disabled={!preCallLead.teamsLink}
                   >
                     <Video className="w-4 h-4 mr-2" />JOIN MEETING
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-10 border-violet-800/60 bg-violet-900/20 hover:bg-violet-800/30 text-violet-400 hover:text-violet-300 text-sm rounded-xl px-4 gap-1.5"
+                    onClick={() => {
+                      setPreCallOpen(false);
+                      setRescheduleMode("schedule");
+                      setRescheduleLeadId(preCallLead.id);
+                      setRescheduleDate(preCallLead.demoTime ? preCallLead.demoTime.substring(0, 16) : "");
+                      setRescheduleNewLink(preCallLead.teamsLink || "");
+                      setRescheduleCc("");
+                      setRescheduleEnableTeams(false);
+                      setRescheduleSendEmail(true);
+                      setRescheduleOpen(true);
+                    }}
+                  >
+                    <Calendar className="w-3.5 h-3.5" />Schedule
                   </Button>
                   <Button
                     variant="outline"
@@ -3490,6 +4348,186 @@ export default function LeadsDashboard() {
             <Button variant="outline" className="border-zinc-700 text-zinc-400 w-full" onClick={() => setDocUsageOpen(false)}>
               Cancel
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ════════════════ DOCUMENT VIEWER DIALOG ════════════════ */}
+      {(() => {
+        const ext = docViewerFilename.split(".").pop()?.toLowerCase() || "";
+        const isPdf = ext === "pdf";
+        const isOffice = ["docx", "pptx", "xlsx"].includes(ext);
+        return (
+          <Dialog open={docViewerOpen} onOpenChange={setDocViewerOpen}>
+            <DialogContent className="bg-[#0c0c0c] border-zinc-800 text-white max-w-5xl w-full h-[90vh] flex flex-col p-0" showCloseButton={false}>
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 py-3 border-b border-zinc-800/60 shrink-0">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <FileText className="w-4 h-4 text-indigo-400 shrink-0" />
+                  <p className="text-sm font-semibold text-white truncate">{docViewerFilename}</p>
+                  {isPdf && <Badge className="bg-rose-500/15 text-rose-400 border-rose-500/20 text-[9px] uppercase font-black shrink-0">PDF</Badge>}
+                  {isOffice && <Badge className="bg-indigo-500/15 text-indigo-400 border-indigo-500/20 text-[9px] uppercase font-black shrink-0">{ext.toUpperCase()}</Badge>}
+                </div>
+                <div className="flex items-center gap-2 shrink-0 ml-4">
+                  <a href={docViewerUrl.replace("/view", "/download")} download target="_blank" rel="noreferrer">
+                    <Button size="sm" className="h-7 text-xs bg-emerald-700 hover:bg-emerald-600 text-white px-3 gap-1.5">
+                      <Download className="w-3 h-3" />Download
+                    </Button>
+                  </a>
+                  <Button size="sm" variant="outline" className="h-7 text-xs border-zinc-700 text-zinc-400 hover:text-white px-3" onClick={() => setDocViewerOpen(false)}>
+                    Close
+                  </Button>
+                </div>
+              </div>
+
+              {/* Content area */}
+              <div className="flex-1 overflow-hidden bg-zinc-950">
+                {isPdf ? (
+                  <iframe
+                    src={docViewerUrl}
+                    className="w-full h-full border-0"
+                    title={docViewerFilename}
+                  />
+                ) : isOffice ? (
+                  <div className="h-full flex flex-col items-center justify-center gap-5 p-8 text-center">
+                    <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
+                      <FileText className="w-8 h-8 text-indigo-400" />
+                    </div>
+                    <div>
+                      <p className="text-lg font-bold text-white mb-1">{ext.toUpperCase()} Document</p>
+                      <p className="text-sm text-zinc-400 max-w-sm leading-relaxed">
+                        Office documents cannot be previewed directly in the browser.
+                        Open it in Microsoft Office or download it to view the contents.
+                      </p>
+                    </div>
+                    <div className="flex gap-3">
+                      <a href={docViewerUrl} target="_blank" rel="noreferrer">
+                        <Button className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2">
+                          <ExternalLink className="w-4 h-4" />Open in Browser
+                        </Button>
+                      </a>
+                      <a href={docViewerUrl.replace("/view", "/download")} download>
+                        <Button variant="outline" className="border-zinc-700 text-zinc-300 hover:text-white gap-2">
+                          <Download className="w-4 h-4" />Download
+                        </Button>
+                      </a>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="h-full flex items-center justify-center">
+                    <div className="text-center">
+                      <FileText className="w-12 h-12 text-zinc-600 mx-auto mb-3" />
+                      <p className="text-sm text-zinc-400">Preview not available for this file type.</p>
+                      <a href={docViewerUrl} target="_blank" rel="noreferrer" className="mt-3 inline-block">
+                        <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2 mt-3">
+                          <ExternalLink className="w-3.5 h-3.5" />Open File
+                        </Button>
+                      </a>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
+        );
+      })()}
+
+      {/* ════════════════ REGENERATE DOCUMENT DIALOG ════════════════ */}
+      <Dialog open={regenOpen} onOpenChange={(v) => { setRegenOpen(v); if (!v) { setRegenFields({}); setRegenDoc(null); } }}>
+        <DialogContent className="bg-[#111] border-zinc-800 text-white max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-white flex items-center gap-2">
+              <Wand2 className="w-5 h-5 text-rose-400" />Regenerate Document with AI
+            </DialogTitle>
+            <DialogDescription className="text-zinc-400">
+              AI will adjust the document fields based on the rejection remarks, then you can review and regenerate.
+            </DialogDescription>
+          </DialogHeader>
+          {regenDoc && (
+            <div className="space-y-4 mt-2">
+              {/* Rejection remarks */}
+              <div className="p-3 rounded-xl bg-rose-500/5 border border-rose-500/15">
+                <p className="text-[10px] text-rose-400 font-semibold uppercase tracking-wider mb-2">Rejection Remarks</p>
+                {regenDoc.tl_remarks && <p className="text-[12px] text-zinc-300 mb-1"><span className="text-zinc-500 font-medium">Team Lead: </span>{regenDoc.tl_remarks}</p>}
+                {regenDoc.legal_remarks && <p className="text-[12px] text-zinc-300 mb-1"><span className="text-zinc-500 font-medium">Legal: </span>{regenDoc.legal_remarks}</p>}
+                {regenDoc.finance_remarks && <p className="text-[12px] text-zinc-300 mb-1"><span className="text-zinc-500 font-medium">Finance: </span>{regenDoc.finance_remarks}</p>}
+                {regenDoc.marketing_remarks && <p className="text-[12px] text-zinc-300 mb-1"><span className="text-zinc-500 font-medium">Marketing: </span>{regenDoc.marketing_remarks}</p>}
+                {regenDoc.admin_remarks && <p className="text-[12px] text-zinc-300"><span className="text-zinc-500 font-medium">Admin: </span>{regenDoc.admin_remarks}</p>}
+                {!regenDoc.tl_remarks && !regenDoc.legal_remarks && !regenDoc.finance_remarks && !regenDoc.marketing_remarks && !regenDoc.admin_remarks && (
+                  <p className="text-[12px] text-zinc-500">No remarks recorded on this document.</p>
+                )}
+              </div>
+
+              {/* "Get AI Suggestions" button */}
+              {Object.keys(regenFields).length === 0 ? (
+                <Button
+                  className="w-full h-9 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/20 text-sm font-semibold"
+                  disabled={regenLoading}
+                  onClick={async () => {
+                    if (!regenDoc || !selectedLead) return;
+                    setRegenLoading(true);
+                    try {
+                      const storedFields = JSON.parse(
+                        localStorage.getItem(`doc-fields-${regenDoc.id}`) ||
+                        localStorage.getItem(`lead-${selectedLead.id}-doc-${regenDoc.type}`) ||
+                        "{}"
+                      );
+                      const res = await fetch(`${API}/api/v1/documents/${regenDoc.id}/regenerate-fields`, {
+                        method: "POST",
+                        headers: getHeaders(),
+                        body: JSON.stringify({ original_fields: storedFields, template_name: regenDoc.filename || "" }),
+                      });
+                      if (!res.ok) throw new Error(await res.text());
+                      const data = await res.json();
+                      setRegenFields(data.fields || {});
+                      toast("success", "AI Suggestions Ready", "Review the updated fields below, then generate.");
+                    } catch { toast("error", "Failed", "Could not get AI suggestions. Check GEMINI_API_KEY."); }
+                    finally { setRegenLoading(false); }
+                  }}
+                >
+                  {regenLoading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Getting AI Suggestions…</> : <><Sparkles className="w-4 h-4 mr-2" />Get AI Suggestions</>}
+                </Button>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-[11px] text-zinc-400 flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />AI has adjusted the fields. Review and edit before regenerating.</p>
+                  <div className="space-y-2.5">
+                    {Object.entries(regenFields).map(([field, value]) => (
+                      <div key={field}>
+                        <Label className="text-zinc-500 text-[10px] uppercase tracking-wider font-medium">{field.replace(/_/g, " ")}</Label>
+                        <Input
+                          value={value}
+                          onChange={(e) => setRegenFields(prev => ({ ...prev, [field]: e.target.value }))}
+                          className="bg-zinc-900 border-zinc-700 text-white mt-1 h-9 text-sm"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          <DialogFooter className="mt-4">
+            <Button variant="outline" className="border-zinc-700 text-zinc-300" onClick={() => setRegenOpen(false)}>Cancel</Button>
+            {Object.keys(regenFields).length > 0 && regenDoc && selectedLead && (
+              <Button
+                className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                onClick={() => {
+                  // Pre-populate the main generate dialog with regen fields and open it
+                  setGenDocType(regenDoc.type || "contract");
+                  setGenDocFieldValues(regenFields);
+                  const docTemplateName = regenDoc.filename || "";
+                  setGenTemplateName(docTemplateName);
+                  setGenDownloadUrl(null);
+                  setGenViewUrl(null);
+                  setGenIsGenerating(false);
+                  setRegenOpen(false);
+                  setGenDocsOpen(true);
+                  toast("info", "Fields Pre-filled", "AI-adjusted fields loaded. Click Generate to create the updated document.");
+                }}
+              >
+                <FilePlus className="w-4 h-4 mr-2" />Generate Updated Document
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

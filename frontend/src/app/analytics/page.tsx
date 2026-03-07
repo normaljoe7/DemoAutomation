@@ -20,6 +20,7 @@ import {
     ArrowUpRight,
 } from "lucide-react";
 import { useState } from "react";
+import { useAuth } from "@/contexts/auth-context";
 
 const overviewStats = [
     { label: "Total Calls", value: "156", change: "+12%", trend: "up", icon: Phone },
@@ -49,6 +50,7 @@ const recentHighlights = [
 ];
 
 export default function AnalyticsPage() {
+    const { getHeaders } = useAuth();
     const [timeRange, setTimeRange] = useState("30d");
 
     return (

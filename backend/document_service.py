@@ -120,11 +120,17 @@ def generate_document(template_name: str, data: dict, convert_pdf: bool = False)
         template_path, processed_data, output_path, convert_pdf=convert_pdf
     )
 
+    # Use the PDF as the primary file when conversion succeeds
+    if pdf_path and os.path.exists(pdf_path):
+        primary_filename = os.path.basename(pdf_path)
+    else:
+        primary_filename = output_filename
+
     return {
         "docx_path": docx_path,
         "pdf_path": pdf_path,
         "error": error_msg,
-        "filename": output_filename
+        "filename": primary_filename
     }
 
 def delete_template(template_name: str):

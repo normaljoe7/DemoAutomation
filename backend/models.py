@@ -7,9 +7,10 @@ Base = declarative_base()
 class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(150), nullable=True)
     email = Column(String(255), unique=True, index=True, nullable=False)
     hashed_password = Column(String(255), nullable=False)
-    role = Column(String(50), default="sdr") # sdr, finance, legal, admin
+    role = Column(String(50), default="sdr")  # sdr, team_lead, finance, legal, marketing, admin
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -52,11 +53,15 @@ class Lead(Base):
     generated_doc_urls = Column(JSON, nullable=True)   # {docKey: downloadUrl}
     # Custom field values (populated from settings-defined custom fields)
     custom_field_values = Column(JSON, nullable=True)  # {fieldName: value}
+    # Hierarchy — team lead responsible for this lead's SDR
+    tl_id = Column(Integer, nullable=True)             # FK-style ref to users.id where role='team_lead'
+    user_id = Column(Integer, nullable=True)           # FK-style ref to users.id where role='sdr' (owner)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     pre_call_reports = relationship("PreCallReport", back_populates="lead")
     calls = relationship("Call", back_populates="lead")
+    bookings = relationship("DemoBooking", back_populates="lead", order_by="DemoBooking.created_at.desc()")
 
 class PreCallReport(Base):
     __tablename__ = "pre_call_reports"
@@ -97,8 +102,27 @@ class Document(Base):
     download_url = Column(String(500), nullable=True)
     status = Column(String(50), default="generated") # generated, pending_approval, approved, rejected, sent
     payment_link = Column(String(500), nullable=True)
+    # Approval workflow — chain: SDR → Team Lead → Legal → Finance → Marketing → Admin → ready_to_send
+    approval_status = Column(String(50), nullable=True)
+    # pending_tl | rejected_tl | pending_legal | rejected_legal | pending_finance | rejected_finance
+    # | pending_marketing | rejected_marketing | pending_admin | rejected_admin | ready_to_send | sent
+    tl_remarks = Column(Text, nullable=True)
+    finance_remarks = Column(Text, nullable=True)
+    legal_remarks = Column(Text, nullable=True)
+    marketing_remarks = Column(Text, nullable=True)
+    admin_remarks = Column(Text, nullable=True)
+    approved_by_tl = Column(Integer, nullable=True)
+    approved_by_finance = Column(Integer, nullable=True)
+    approved_by_legal = Column(Integer, nullable=True)
+    approved_by_marketing = Column(Integer, nullable=True)
+    approved_by_admin = Column(Integer, nullable=True)
+    approved_at_tl = Column(DateTime, nullable=True)
+    approved_at_finance = Column(DateTime, nullable=True)
+    approved_at_legal = Column(DateTime, nullable=True)
+    approved_at_marketing = Column(DateTime, nullable=True)
+    approved_at_admin = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
-    
+
     call = relationship("Call", back_populates="documents")
     approvals = relationship("ApprovalQueue", back_populates="document")
 
@@ -159,9 +183,40 @@ class Notification(Base):
     __tablename__ = "notifications"
     id = Column(Integer, primary_key=True, index=True)
     message = Column(Text, nullable=False)
-    type = Column(String(50), default="info")  # info, approved, rejected
+    type = Column(String(50), default="info")  # info, approved, rejected, booking
     document_id = Column(Integer, ForeignKey("documents.id"), nullable=True)
     lead_name = Column(String(255), nullable=True)
     doc_type = Column(String(100), nullable=True)
     is_read = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class DemoBooking(Base):
+    """Tracks every time an SDR schedules or reschedules a demo — full audit trail."""
+    __tablename__ = "demo_bookings"
+    id = Column(Integer, primary_key=True, index=True)
+    lead_id = Column(Integer, ForeignKey("leads.id"), nullable=False)
+    # "schedule" = new booking, "reschedule" = changed existing booking
+    mode = Column(String(20), default="schedule")
+    demo_time = Column(String(255), nullable=True)      # ISO datetime string of the booked slot
+    teams_link = Column(String(500), nullable=True)     # Teams join URL (if provided)
+    cc_emails = Column(JSON, nullable=True)             # list of CC'd addresses
+    email_sent = Column(Boolean, default=False)         # whether confirmation email was dispatched
+    email_error = Column(Text, nullable=True)           # SMTP error message if sending failed
+    booked_by = Column(String(255), nullable=True)      # SDR identifier (email / name)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    lead = relationship("Lead", back_populates="bookings")
+
+
+class CalendarToken(Base):
+    """Stores OAuth tokens for calendar provider connections (Google, Microsoft)."""
+    __tablename__ = "calendar_tokens"
+    id            = Column(Integer, primary_key=True, index=True)
+    user_id       = Column(Integer, nullable=False, index=True)
+    provider      = Column(String(50), nullable=False)   # "google" | "microsoft"
+    access_token  = Column(Text, nullable=False)
+    refresh_token = Column(Text, nullable=True)
+    expires_at    = Column(DateTime, nullable=True)
+    created_at    = Column(DateTime, default=datetime.utcnow)
+    updated_at    = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

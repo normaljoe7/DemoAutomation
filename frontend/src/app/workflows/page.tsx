@@ -26,6 +26,7 @@ import {
     AlertTriangle,
 } from "lucide-react";
 import { useState } from "react";
+import { useAuth } from "@/contexts/auth-context";
 
 interface ApprovalItem {
     id: string;
@@ -64,6 +65,7 @@ const stepColors: Record<string, string> = {
 };
 
 export default function WorkflowsPage() {
+    const { getHeaders } = useAuth();
     const [approvals, setApprovals] = useState(mockApprovals);
     const [selectedItem, setSelectedItem] = useState<ApprovalItem | null>(null);
     const [rejectOpen, setRejectOpen] = useState(false);

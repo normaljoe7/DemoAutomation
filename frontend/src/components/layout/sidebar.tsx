@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/auth-context";
 import {
     LayoutDashboard,
     MessageSquare,
@@ -10,21 +11,35 @@ import {
     FileText,
     GitPullRequest,
     BarChart2,
-    Settings
+    Settings,
+    UserCheck,
+    Megaphone,
 } from "lucide-react";
+
+interface NavLink {
+    name: string;
+    path: string;
+    icon: React.ElementType;
+    roles: string[];
+}
+
+const ALL_LINKS: NavLink[] = [
+    { name: "Leads",       path: "/",            icon: LayoutDashboard, roles: ["sdr", "team_lead", "legal", "finance", "marketing", "admin"] },
+    { name: "Team Lead",   path: "/team-lead",   icon: UserCheck,       roles: ["team_lead", "admin"] },
+    { name: "Transcripts", path: "/transcripts", icon: MessageSquare,   roles: ["sdr", "team_lead", "legal", "finance", "marketing", "admin"] },
+    { name: "Clients",     path: "/clients",     icon: Users,           roles: ["sdr", "team_lead", "legal", "finance", "marketing", "admin"] },
+    { name: "Templates",   path: "/templates",   icon: FileText,        roles: ["sdr", "team_lead", "legal", "finance", "marketing", "admin"] },
+    { name: "Workflows",   path: "/workflows",   icon: GitPullRequest,  roles: ["team_lead", "legal", "finance", "admin"] },
+    { name: "Marketing",   path: "/marketing",   icon: Megaphone,       roles: ["marketing", "admin"] },
+    { name: "Analytics",   path: "/analytics",   icon: BarChart2,       roles: ["sdr", "team_lead", "legal", "finance", "marketing", "admin"] },
+    { name: "Settings",    path: "/settings",    icon: Settings,        roles: ["sdr", "team_lead", "legal", "finance", "marketing", "admin"] },
+];
 
 export function Sidebar() {
     const pathname = usePathname();
+    const { user } = useAuth();
 
-    const links = [
-        { name: "Leads", path: "/", icon: LayoutDashboard },
-        { name: "Transcripts", path: "/transcripts", icon: MessageSquare },
-        { name: "Clients", path: "/clients", icon: Users },
-        { name: "Templates", path: "/templates", icon: FileText },
-        { name: "Workflows", path: "/workflows", icon: GitPullRequest },
-        { name: "Analytics", path: "/analytics", icon: BarChart2 },
-        { name: "Settings", path: "/settings", icon: Settings },
-    ];
+    const links = ALL_LINKS.filter(l => !user || l.roles.includes(user.role));
 
     return (
         <aside className="w-64 shrink-0 flex flex-col border-r border-zinc-800/60 bg-[#0c0c0c] z-10 transition-all duration-300">
@@ -63,9 +78,12 @@ export function Sidebar() {
                 </div>
                 <div className="flex items-center gap-3">
                     <div className="h-8 w-8 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center text-sm font-medium border border-rose-500/30">
-                        N
+                        {user ? (user.name?.[0] || user.email[0]).toUpperCase() : "?"}
                     </div>
-                    <p className="text-xs text-zinc-400 leading-tight">Gen SDR Automation active.</p>
+                    <div className="min-w-0">
+                        <p className="text-xs text-white truncate font-medium">{user?.name || user?.email || "Guest"}</p>
+                        <p className="text-[10px] text-zinc-500 capitalize">{user?.role?.replace("_", " ") || ""}</p>
+                    </div>
                 </div>
             </div>
         </aside>

@@ -1,6 +1,7 @@
 "use client";
 
 import { Header } from "@/components/layout/header";
+import { toast } from "@/components/ui/toast-notification";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -38,8 +39,10 @@ import {
     ShieldCheck,
     Wallet,
     Users,
+    Eye,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
+import { useAuth } from "@/contexts/auth-context";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -51,6 +54,7 @@ interface Template {
 }
 
 export default function TemplatesPage() {
+    const { getHeaders } = useAuth();
     const [templates, setTemplates] = useState<Template[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
@@ -78,7 +82,7 @@ export default function TemplatesPage() {
     const loadTemplates = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`${API}/api/v1/templates`);
+            const res = await fetch(`${API}/api/v1/templates`, { headers: getHeaders(false) });
             if (!res.ok) throw new Error("Failed");
             const data = await res.json();
             setTemplates(data);
@@ -117,6 +121,7 @@ export default function TemplatesPage() {
             fd.append("department", uploadDepartment);
             const res = await fetch(`${API}/api/v1/templates/upload`, {
                 method: "POST",
+                headers: getHeaders(false),
                 body: fd,
             });
             if (!res.ok) {
@@ -124,6 +129,7 @@ export default function TemplatesPage() {
                 throw new Error(errData.detail || "Upload failed");
             }
             setUploadSuccess(true);
+            toast("success", "Template uploaded", "Variables scanned and template is ready to use.");
             setTimeout(() => {
                 setUploadOpen(false);
                 setUploadFile(null);
@@ -133,7 +139,7 @@ export default function TemplatesPage() {
             }, 1200);
         } catch (e: unknown) {
             const msg = e instanceof Error ? e.message : "Upload failed";
-            alert(`Upload failed: ${msg}. Make sure the backend is running and the file is a valid .docx or .pptx.`);
+            toast("error", "Upload failed", `${msg}. Make sure the backend is running and the file is a valid .docx or .pptx.`);
         } finally {
             setUploading(false);
         }
@@ -141,13 +147,13 @@ export default function TemplatesPage() {
 
     const handleDelete = async (name: string) => {
         try {
-            const res = await fetch(`${API}/api/v1/templates/${encodeURIComponent(name)}`, { method: "DELETE" });
+            const res = await fetch(`${API}/api/v1/templates/${encodeURIComponent(name)}`, { method: "DELETE", headers: getHeaders(false) });
             if (!res.ok) throw new Error("Delete failed");
             setDeleteTarget(null);
             if (selectedTemplate?.name === name) setSelectedTemplate(null);
             await loadTemplates();
         } catch {
-            alert("Failed to delete template.");
+            toast("error", "Delete failed", "Could not delete the template. Please try again.");
         }
     };
 
@@ -166,11 +172,11 @@ export default function TemplatesPage() {
         try {
             const res = await fetch(`${API}/api/v1/documents/generate`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: getHeaders(),
                 body: JSON.stringify({
                     template_name: generateTemplate.name,
                     data: generateValues,
-                    convert_pdf: false,
+                    convert_pdf: true,
                 }),
             });
             if (!res.ok) {
@@ -179,8 +185,9 @@ export default function TemplatesPage() {
             }
             const result = await res.json();
             setGeneratedFile(result.filename);
+            toast("success", "Document generated", result.filename);
         } catch (e: any) {
-            alert(`Document generation failed: ${e.message}`);
+            toast("error", "Generation failed", e.message || "Document could not be generated.");
         } finally {
             setGenerating(false);
         }
@@ -523,9 +530,14 @@ export default function TemplatesPage() {
                                 <p className="text-sm text-emerald-400 font-medium">Document generated!</p>
                                 <p className="text-xs text-zinc-400 font-mono">{generatedFile}</p>
                             </div>
-                            <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={() => handleDownload(generatedFile)}>
-                                <Download className="w-3 h-3 mr-1" />Download
-                            </Button>
+                            <div className="flex gap-2">
+                                <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700" onClick={() => window.open(`${API}/api/v1/documents/${encodeURIComponent(generatedFile)}/view`, "_blank")}>
+                                    <Eye className="w-3 h-3 mr-1" />View
+                                </Button>
+                                <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={() => handleDownload(generatedFile)}>
+                                    <Download className="w-3 h-3 mr-1" />Download
+                                </Button>
+                            </div>
                         </div>
                     )}
                     <DialogFooter>

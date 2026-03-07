@@ -4,6 +4,7 @@ import { Header } from "@/components/layout/header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
     Dialog,
@@ -34,7 +35,8 @@ import {
     Plus,
     Loader2,
 } from "lucide-react";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { useAuth } from "@/contexts/auth-context";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -48,6 +50,59 @@ interface FinanceTemplate {
     company: string;
     status: "draft" | "pending_review" | "approved" | "sent";
     lastModified: string;
+    // Real document identifiers (present when loaded from backend)
+    _docId?: number;
+    _filename?: string | null;
+    _pdfFilename?: string | null;
+}
+
+// Backend document shape returned by /api/v1/finance/documents
+interface BackendDoc {
+    id: number;
+    type: string;
+    filename: string | null;
+    pdf_path: string | null;
+    approval_status: string | null;
+    finance_remarks: string | null;
+    lead_name: string | null;
+    company: string | null;
+    created_at: string;
+}
+
+const APPROVAL_TO_UI_STATUS: Record<string, FinanceTemplate["status"]> = {
+    // Finance reviews docs from Legal; on Finance approval, goes to Marketing then Admin
+    pending_finance:    "pending_review",
+    rejected_finance:   "draft",
+    pending_marketing:  "approved",   // Finance approved, now with Marketing
+    pending_admin:      "approved",   // Marketing approved, now with Admin
+    ready_to_send:      "sent",
+    sent:               "sent",
+};
+
+function mapDocToFinanceTemplate(doc: BackendDoc): FinanceTemplate {
+    const pdfBasename = doc.pdf_path ? doc.pdf_path.split(/[/\\]/).pop() ?? null : null;
+    const approvalStatus = doc.approval_status ?? "pending_finance";
+    return {
+        id: String(doc.id),
+        name: `${(doc.type ?? "Document").replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())} — ${doc.company || `Doc #${doc.id}`}`,
+        type: doc.type === "quotation" ? "quotation" : "invoice",
+        assignedLead: doc.lead_name || "—",
+        company: doc.company || "—",
+        status: APPROVAL_TO_UI_STATUS[approvalStatus] ?? "pending_review",
+        lastModified: new Date(doc.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+        variables: [
+            { key: "document_type", label: "Document Type", value: doc.type ?? "—", category: "info" },
+            { key: "filename",      label: "File Name",      value: doc.filename ?? "—", category: "info" },
+            { key: "approval_status", label: "Approval Status", value: approvalStatus.replace(/_/g, " "), category: "info" },
+            { key: "created",       label: "Created On",     value: new Date(doc.created_at).toLocaleDateString(), category: "info" },
+            ...(doc.finance_remarks
+                ? [{ key: "remarks", label: "Finance Remarks", value: doc.finance_remarks, category: "info" as const }]
+                : []),
+        ],
+        _docId: doc.id,
+        _filename: doc.filename,
+        _pdfFilename: pdfBasename,
+    };
 }
 
 const initialTemplates: FinanceTemplate[] = [
@@ -141,11 +196,13 @@ const categoryIcons: Record<string, React.ReactNode> = {
 };
 
 export default function FinancePage() {
+    const { getHeaders } = useAuth();
     const [templates, setTemplates] = useState(initialTemplates);
     const [selected, setSelected] = useState<FinanceTemplate | null>(templates[0]);
     const [editingKey, setEditingKey] = useState<string | null>(null);
     const [editValue, setEditValue] = useState("");
     const [saved, setSaved] = useState(false);
+    const [loading, setLoading] = useState(true);
 
     // Template upload
     const [uploadOpen, setUploadOpen] = useState(false);
@@ -153,6 +210,28 @@ export default function FinancePage() {
     const [uploading, setUploading] = useState(false);
     const [uploadSuccess, setUploadSuccess] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // Load real documents from backend
+    useEffect(() => {
+        const loadFinanceDocs = async () => {
+            try {
+                const res = await fetch(`${API}/api/v1/finance/documents`, { headers: getHeaders(false) });
+                if (res.ok) {
+                    const docs: BackendDoc[] = await res.json();
+                    if (docs.length > 0) {
+                        const mapped = docs.map(mapDocToFinanceTemplate);
+                        setTemplates(mapped);
+                        setSelected(mapped[0]);
+                    }
+                }
+            } catch {
+                // Backend unavailable — keep using mock data
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadFinanceDocs();
+    }, []);
 
     const handleUploadTemplate = async () => {
         if (!uploadFile) return;
@@ -205,17 +284,95 @@ export default function FinancePage() {
 
     const handleApprove = async (templateId: string) => {
         const t = templates.find((t) => t.id === templateId);
+        // Use the Finance-specific endpoint for real documents
+        const endpoint = t?._docId
+            ? `${API}/api/v1/finance/documents/${t._docId}/approve`
+            : `${API}/api/v1/documents/${templateId}/approve`;
+        const body = t?._docId
+            ? JSON.stringify({ remarks: "" })
+            : JSON.stringify({ lead_name: t?.assignedLead, doc_type: t?.type });
+
+        try {
+            const res = await fetch(endpoint, {
+                method: "POST",
+                headers: getHeaders(),
+                body,
+            });
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                alert(`Approval failed: ${(errData as { detail?: string }).detail || "Unknown error"}`);
+                return;
+            }
+        } catch {
+            alert("Failed to connect to server.");
+            return;
+        }
         const updated = templates.map((t) => t.id === templateId ? { ...t, status: "approved" as const } : t);
         setTemplates(updated);
         setSelected(updated.find((t) => t.id === templateId) || null);
-        // Create approval notification
+    };
+
+    const handlePreview = (t: FinanceTemplate) => {
+        // Prefer PDF, fall back to DOCX
+        const viewName = t._pdfFilename || t._filename;
+        if (viewName) {
+            window.open(`${API}/api/v1/documents/${encodeURIComponent(viewName)}/view`, "_blank");
+        } else {
+            alert("No file available for preview.");
+        }
+    };
+
+    const handleDownload = (t: FinanceTemplate) => {
+        const dlName = t._filename;
+        if (dlName) {
+            window.open(`${API}/api/v1/documents/${encodeURIComponent(dlName)}/download`, "_blank");
+        } else {
+            alert("No file available for download.");
+        }
+    };
+
+    // ─── Reject workflow ───
+    const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+    const [rejectRemarks, setRejectRemarks] = useState("");
+    const [rejectSubmitting, setRejectSubmitting] = useState(false);
+    const [rejectTargetId, setRejectTargetId] = useState<string | null>(null);
+
+    const openRejectDialog = (templateId: string) => {
+        setRejectTargetId(templateId);
+        setRejectRemarks("");
+        setRejectDialogOpen(true);
+    };
+
+    const handleReject = async () => {
+        if (!rejectTargetId) return;
+        const t = templates.find((t) => t.id === rejectTargetId);
+        if (!rejectRemarks.trim()) {
+            alert("Remarks are required when rejecting a document.");
+            return;
+        }
+        setRejectSubmitting(true);
         try {
-            await fetch(`${API}/api/v1/documents/${templateId}/approve`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ lead_name: t?.assignedLead, doc_type: t?.type }),
-            });
-        } catch { /* silent */ }
+            if (t?._docId) {
+                const res = await fetch(`${API}/api/v1/finance/documents/${t._docId}/reject`, {
+                    method: "POST",
+                    headers: getHeaders(),
+                    body: JSON.stringify({ remarks: rejectRemarks }),
+                });
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}));
+                    alert(`Rejection failed: ${(errData as { detail?: string }).detail || "Unknown error"}`);
+                    return;
+                }
+            }
+            const updated = templates.map((t) => t.id === rejectTargetId ? { ...t, status: "draft" as const } : t);
+            setTemplates(updated);
+            setSelected(updated.find((t) => t.id === rejectTargetId) || null);
+            setRejectDialogOpen(false);
+        } catch {
+            alert("Failed to connect to server.");
+        } finally {
+            setRejectSubmitting(false);
+        }
     };
 
     return (
@@ -245,7 +402,12 @@ export default function FinancePage() {
                         </div>
                     </div>
                     <div className="flex-1 overflow-y-auto divide-y divide-zinc-800/60">
-                        {templates.map((t) => (
+                        {loading ? (
+                            <div className="flex items-center justify-center p-8">
+                                <Loader2 className="w-5 h-5 animate-spin text-amber-400" />
+                                <span className="ml-2 text-xs text-zinc-400">Loading documents...</span>
+                            </div>
+                        ) : templates.map((t) => (
                             <div
                                 key={t.id}
                                 onClick={() => setSelected(t)}
@@ -285,10 +447,15 @@ export default function FinancePage() {
                                             <CheckCircle2 className="w-3.5 h-3.5 mr-1" />Approve
                                         </Button>
                                     )}
-                                    <Button size="sm" variant="outline" className="border-zinc-700 text-zinc-300 h-8">
+                                    {(selected.status === "pending_review" || selected.status === "draft") && selected._docId && (
+                                        <Button size="sm" className="bg-rose-600 hover:bg-rose-700 text-white h-8" onClick={() => openRejectDialog(selected.id)}>
+                                            <XCircle className="w-3.5 h-3.5 mr-1" />Reject
+                                        </Button>
+                                    )}
+                                    <Button size="sm" variant="outline" className="border-zinc-700 text-zinc-300 h-8" onClick={() => handlePreview(selected)}>
                                         <Eye className="w-3.5 h-3.5 mr-1" />Preview
                                     </Button>
-                                    <Button size="sm" variant="outline" className="border-zinc-700 text-zinc-300 h-8">
+                                    <Button size="sm" variant="outline" className="border-zinc-700 text-zinc-300 h-8" onClick={() => handleDownload(selected)}>
                                         <Download className="w-3.5 h-3.5 mr-1" />Download
                                     </Button>
                                 </div>
@@ -423,6 +590,42 @@ export default function FinancePage() {
                         >
                             {uploading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <FileUp className="w-4 h-4 mr-2" />}
                             Upload Template
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Reject Document Dialog */}
+            <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
+                <DialogContent className="bg-[#111] border-zinc-800 text-white max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="text-white flex items-center gap-2">
+                            <XCircle className="w-4 h-4 text-rose-400" />Reject Document
+                        </DialogTitle>
+                        <DialogDescription className="text-zinc-400">
+                            Provide remarks explaining why this document is being rejected. The SDR will be notified.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-3">
+                        <div>
+                            <Label className="text-zinc-400 text-xs uppercase tracking-wider">Rejection Remarks <span className="text-rose-400">*</span></Label>
+                            <Textarea
+                                className="bg-zinc-900 border-zinc-700 text-white mt-1.5 min-h-[100px]"
+                                placeholder="Describe what needs to be corrected or why this document is rejected..."
+                                value={rejectRemarks}
+                                onChange={(e) => setRejectRemarks(e.target.value)}
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" className="border-zinc-700 text-zinc-300" onClick={() => setRejectDialogOpen(false)}>Cancel</Button>
+                        <Button
+                            className="bg-rose-600 hover:bg-rose-700 text-white"
+                            disabled={!rejectRemarks.trim() || rejectSubmitting}
+                            onClick={handleReject}
+                        >
+                            {rejectSubmitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <XCircle className="w-4 h-4 mr-2" />}
+                            Confirm Rejection
                         </Button>
                     </DialogFooter>
                 </DialogContent>

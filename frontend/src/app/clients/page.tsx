@@ -26,6 +26,7 @@ import {
     RefreshCw,
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/auth-context";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -56,6 +57,7 @@ const emptyForm = {
 };
 
 export default function ClientsPage() {
+    const { getHeaders } = useAuth();
     const [clients, setClients] = useState<Client[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
@@ -69,7 +71,7 @@ export default function ClientsPage() {
     const loadClients = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`${API}/api/v1/leads`);
+            const res = await fetch(`${API}/api/v1/leads`, { headers: getHeaders(false) });
             if (!res.ok) throw new Error("Failed to fetch");
             const leads = await res.json();
             setClients(leads.map((l: any) => ({
@@ -106,7 +108,7 @@ export default function ClientsPage() {
         try {
             const res = await fetch(`${API}/api/v1/leads`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: getHeaders(),
                 body: JSON.stringify({
                     name: form.name,
                     email: form.email,
@@ -150,7 +152,7 @@ export default function ClientsPage() {
         try {
             const res = await fetch(`${API}/api/v1/leads/${editingId}`, {
                 method: "PUT",
-                headers: { "Content-Type": "application/json" },
+                headers: getHeaders(),
                 body: JSON.stringify({
                     name: form.name,
                     email: form.email,
@@ -176,7 +178,7 @@ export default function ClientsPage() {
 
     const handleDelete = async (id: number) => {
         try {
-            const res = await fetch(`${API}/api/v1/leads/${id}`, { method: "DELETE" });
+            const res = await fetch(`${API}/api/v1/leads/${id}`, { method: "DELETE", headers: getHeaders(false) });
             if (!res.ok) throw new Error("Failed");
             setDeleteConfirmId(null);
             await loadClients();

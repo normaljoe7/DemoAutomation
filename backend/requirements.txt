@@ -13,6 +13,8 @@ redis
 celery
 python-multipart
 passlib[bcrypt]
-pyjwt
+python-jose[cryptography]
+httpx
 pydantic-settings
 pydantic[email]
+google-generativeai
